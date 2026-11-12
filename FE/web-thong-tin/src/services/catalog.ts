@@ -22,5 +22,11 @@ export const getHomeContent = () => homeContent;
 export const getFeaturedProducts = () => products.filter((product) => homeContent.featuredProductIds.includes(product.id));
 export const getRelatedProducts = (id: string) => {
   const product = products.find((item) => item.id === id);
-  return products.filter((item) => item.id !== id && item.categoryId === product?.categoryId);
+  if (!product) return [];
+  return products.filter((item) => item.id !== id)
+    .sort((a, b) => {
+      const categoryPriority = Number(b.categoryId === product.categoryId) - Number(a.categoryId === product.categoryId);
+      return categoryPriority || a.displayOrder - b.displayOrder;
+    })
+    .slice(0, 8);
 };

@@ -40,7 +40,13 @@ function ProductDetails({ product }: { product: Product }) {
           </div>
         </div>
       </div>
-      {related.length ? <section className="section related-products" aria-labelledby="related-title"><div className="section-header"><h2 id="related-title">Có thể bạn cũng thích</h2><Link to="/san-pham" className="text-link">Khám phá thêm <Icon name="arrow-right" /></Link></div><ProductGrid products={related} /></section> : <div className="detail-explore"><p>Một góc nhà, nhiều cảm hứng.</p><Link className="text-link" to="/san-pham">Khám phá các sản phẩm khác <Icon name="arrow-right" /></Link></div>}
+      {related.length ? (
+        <section className="section related-products" aria-labelledby="related-title">
+          <div className="section-header"><h2 id="related-title">Sản phẩm tương tự</h2></div>
+          <ProductGrid products={related} />
+          <div className="related-products-action"><Link to="/san-pham" className="button button-primary">Xem sản phẩm khác <Icon name="arrow-right" /></Link></div>
+        </section>
+      ) : null}
     </div>
   );
 }

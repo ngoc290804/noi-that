@@ -13,7 +13,6 @@ export function ProductCard({ product, priority = false }: { product: Product; p
         <div className="product-card-image"><Photo key={product.images[0].src} image={product.images[0]} priority={priority} /><span className="card-discover">Xem chi tiết <Icon name="arrow-right" /></span></div>
         <div className="product-card-meta">
           <div><h3>{product.name}</h3><p>{formatPrice(product.priceVnd)}</p></div>
-          <span className="card-arrow"><Icon name="arrow-right" /></span>
         </div>
       </Link>
     </article>

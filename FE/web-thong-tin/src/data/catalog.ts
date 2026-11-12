@@ -1,9 +1,9 @@
 import type { Category, Product, ProductImage } from '../types/catalog';
 
-function image(name: string, alt: string, width = 1200, height = 896): ProductImage {
+function image(assetPath: string, alt: string, width = 1200, height = 896): ProductImage {
   return {
-    src: `/images/${name}.webp`,
-    thumbnail: `/images/${name}-600.webp`,
+    src: `/images/${assetPath}.webp`,
+    thumbnail: `/images/${assetPath}-600.webp`,
     alt,
     width,
     height,
@@ -28,7 +28,7 @@ export const products: readonly Product[] = [
     categoryId: 'gom-su', priceVnd: 620000, displayOrder: 1, isFeatured: true,
     shortDescription: 'Một điểm nhấn nhẹ nhàng cho những góc nhà bạn yêu.',
     description: 'Dáng bình tròn mềm mại, sắc màu trung tính dễ kết hợp cùng nhiều không gian. Đặt riêng trên kệ, bên khung cửa sổ hoặc phối cùng một cành cây để tạo nên góc nhỏ của riêng bạn.',
-    images: [image('binh-gom-luma', 'Bình gốm Luma sáng màu đặt trên tủ trong không gian có ánh sáng tự nhiên')],
+    images: [image('Gom-su/Binh-gom-Luma/binh-gom-luma', 'Bình gốm Luma sáng màu đặt trên tủ trong không gian có ánh sáng tự nhiên')],
     specifications: pendingSpecifications,
   },
   {
@@ -37,8 +37,8 @@ export const products: readonly Product[] = [
     shortDescription: 'Những đường cong mộc mạc, dành cho góc sum vầy mỗi ngày.',
     description: 'Ghế ăn Nordic mang dáng vẻ thanh thoát với phần tựa lưng cong và mặt ngồi đan. Một gợi ý cho bàn ăn ấm cúng, góc đọc sách hoặc không gian bạn muốn dành thêm một chỗ ngồi.',
     images: [
-      image('ghe-an-nordic', 'Ghế ăn Nordic có tựa lưng cong và mặt ngồi đan bên rèm cửa'),
-      image('ghe-an-nordic-gan', 'Cận cảnh tựa lưng và mặt ngồi đan của Ghế ăn Nordic', 1024, 764),
+      image('Ghe/Ghe-an-Nordic/ghe-an-nordic', 'Ghế ăn Nordic có tựa lưng cong và mặt ngồi đan bên rèm cửa'),
+      image('Ghe/Ghe-an-Nordic/ghe-an-nordic-gan', 'Cận cảnh tựa lưng và mặt ngồi đan của Ghế ăn Nordic', 1024, 764),
     ],
     specifications: pendingSpecifications,
   },
@@ -47,7 +47,7 @@ export const products: readonly Product[] = [
     categoryId: 'den', priceVnd: 1250000, displayOrder: 3, isFeatured: true,
     shortDescription: 'Một quầng sáng ấm cho những khoảng lặng trong ngày.',
     description: 'Dáng vòm nhẹ nhàng và ánh sáng ấm tạo điểm nhấn cho chiếc tủ, góc làm việc hoặc bàn bên cạnh sofa. Đèn bàn Horizon gợi nên một không gian thư thái khi ngày dần khép lại.',
-    images: [image('den-ban-horizon', 'Đèn bàn Horizon dáng vòm với ánh sáng ấm trên mặt tủ')],
+    images: [image('Den/Den-ban-Horizon/den-ban-horizon', 'Đèn bàn Horizon dáng vòm với ánh sáng ấm trên mặt tủ')],
     specifications: pendingSpecifications,
   },
   {
@@ -55,7 +55,7 @@ export const products: readonly Product[] = [
     categoryId: 'gom-su', priceVnd: 450000, displayOrder: 4, isFeatured: true,
     shortDescription: 'Chậm lại một chút, bên thức uống bạn yêu thích.',
     description: 'Sắc gốm trung tính với những chấm màu tự nhiên tạo cảm giác gần gũi trên bàn trà. Bộ cốc Gốm Mộc là gợi ý nhỏ cho những buổi sáng thong thả và phút nghỉ giữa ngày.',
-    images: [image('bo-coc-gom-moc', 'Hai cốc Gốm Mộc đặt trên khay gỗ cạnh tấm vải sáng màu')],
+    images: [image('Gom-su/Bo-coc-Gom-Moc/bo-coc-gom-moc', 'Hai cốc Gốm Mộc đặt trên khay gỗ cạnh tấm vải sáng màu')],
     specifications: pendingSpecifications,
   },
 ];
@@ -63,10 +63,10 @@ export const products: readonly Product[] = [
 export const homeContent = {
   heroTitle: 'Những món đồ nhỏ làm nên tổ ấm lớn',
   heroDescription: 'Nội thất và gia dụng tinh giản, mang cảm hứng đến những không gian sống trọn vẹn hơn mỗi ngày.',
-  heroImage: image('phong-khach-nordic', 'Phòng khách với sofa sáng màu, bàn tròn và ánh nắng qua rèm cửa'),
+  heroImage: image('Khong-gian/Phong-khach-Nordic/phong-khach-nordic', 'Phòng khách với sofa sáng màu, bàn tròn và ánh nắng qua rèm cửa'),
   featuredProductIds: products.filter((product) => product.isFeatured).map((product) => product.id),
   spaces: [
-    { title: 'Phòng khách Ánh Nắng & Linen', description: 'Một khoảng dừng dịu dàng giữa nhịp sống.', image: image('phong-khach-nordic', 'Không gian phòng khách với sofa và bàn trà'), href: '/san-pham' },
-    { title: 'Phòng ăn Gỗ Sồi Japandi', description: 'Nơi những câu chuyện được sẻ chia.', image: image('phong-an-japandi', 'Không gian phòng ăn với bàn và ghế sáng màu'), href: '/san-pham?category=ban-ghe' },
+    { title: 'Phòng khách Ánh Nắng & Linen', description: 'Một khoảng dừng dịu dàng giữa nhịp sống.', image: image('Khong-gian/Phong-khach-Nordic/phong-khach-nordic', 'Không gian phòng khách với sofa và bàn trà'), href: '/san-pham' },
+    { title: 'Phòng ăn Gỗ Sồi Japandi', description: 'Nơi những câu chuyện được sẻ chia.', image: image('Khong-gian/Phong-an-Japandi/phong-an-japandi', 'Không gian phòng ăn với bàn và ghế sáng màu'), href: '/san-pham?category=ban-ghe' },
   ],
 };

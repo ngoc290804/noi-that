@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { FormEvent, MouseEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -12,27 +12,18 @@ export function SiteHeader() {
   const location = useLocation();
   const navigate = useNavigate();
   const menu = useRef<HTMLDialogElement>(null);
-  const search = useRef<HTMLDialogElement>(null);
-  const searchInput = useRef<HTMLInputElement>(null);
-  const [searchValue, setSearchValue] = useState('');
+  const searchValue = new URLSearchParams(location.search).get('q') ?? '';
 
   useEffect(() => {
     menu.current?.close();
-    search.current?.close();
   }, [location]);
 
-  function openSearch() {
-    setSearchValue(new URLSearchParams(location.search).get('q') ?? '');
-    search.current?.showModal();
-    searchInput.current?.focus();
-  }
-
-  function submitSearch(event: FormEvent) {
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const value = String(new FormData(event.currentTarget).get('q') ?? '').trim();
     const params = new URLSearchParams();
-    if (searchValue.trim()) params.set('q', searchValue.trim());
+    if (value) params.set('q', value);
     navigate(`/san-pham${params.size ? `?${params}` : ''}`);
-    search.current?.close();
   }
 
   return (
@@ -46,7 +37,13 @@ export function SiteHeader() {
             <NavLink to="/san-pham">Sản phẩm</NavLink>
             <Link to="/#ve-luma">Về Luma</Link>
           </nav>
-          <button className="header-search" onClick={openSearch} aria-haspopup="dialog" aria-label="Mở tìm kiếm"><span>Tìm kiếm</span><Icon name="search" /></button>
+          <form key={location.search} className="header-search-form search-form" role="search" aria-label="Tìm kiếm trên menu" onSubmit={submitSearch}>
+            <label className="sr-only" htmlFor="header-search">Tìm sản phẩm trên menu</label>
+            <input id="header-search" name="q" type="search" defaultValue={searchValue} maxLength={120} placeholder="Tìm sản phẩm…" onChange={(event) => {
+              if (event.currentTarget.value === '' && location.pathname === '/san-pham' && location.search) navigate('/san-pham');
+            }} />
+            <button className="icon-button" type="submit" aria-label="Tìm kiếm sản phẩm"><Icon name="search" /></button>
+          </form>
         </div>
       </header>
 
@@ -55,18 +52,6 @@ export function SiteHeader() {
           <div className="dialog-header"><span className="brand" id="menu-title"><BrandLogo /></span><button className="icon-button" aria-label="Đóng menu" onClick={() => menu.current?.close()}><Icon name="close" /></button></div>
           <nav aria-label="Điều hướng di động"><Link to="/">Trang chủ <Icon name="arrow-right" /></Link><Link to="/san-pham">Sản phẩm <Icon name="arrow-right" /></Link><Link to="/#ve-luma">Về Luma <Icon name="arrow-right" /></Link></nav>
           <p className="menu-note">Những món đồ nhỏ.<br />Một tổ ấm của riêng bạn.</p>
-        </div>
-      </dialog>
-
-      <dialog className="search-dialog" ref={search} aria-labelledby="search-title" onClick={dismissBackdrop}>
-        <div className="search-content">
-          <div className="dialog-header"><h2 id="search-title">Bạn đang tìm món đồ nào?</h2><button className="icon-button" aria-label="Đóng tìm kiếm" onClick={() => search.current?.close()}><Icon name="close" /></button></div>
-          <form className="search-form" role="search" onSubmit={submitSearch}>
-            <label className="sr-only" htmlFor="global-search">Tên sản phẩm</label>
-            <input ref={searchInput} id="global-search" type="search" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} maxLength={120} placeholder="Thử tìm “ghế ăn” hoặc “gốm”…" />
-            <button className="icon-button" type="submit" aria-label="Tìm sản phẩm"><Icon name="arrow-right" /></button>
-          </form>
-          <p className="muted">Một chiếc ghế, một chiếc bình… khám phá món đồ cho góc nhà của bạn.</p>
         </div>
       </dialog>
     </>

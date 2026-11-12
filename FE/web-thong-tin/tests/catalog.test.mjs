@@ -31,10 +31,18 @@ test('invalid URLs normalize safely and valid filters survive a URL roundtrip', 
   assert.equal(parseCatalogQuery(new URLSearchParams({ q: 'a'.repeat(200) })).q.length, 120);
 });
 
-test('product detail resolves known slugs, missing slugs are absent, related excludes self', () => {
+test('product detail resolves known slugs and missing slugs are absent', () => {
   assert.equal(getProduct('ghe-an-nordic')?.priceVnd, 2900000);
   assert.equal(getProduct('san-pham-khong-co'), undefined);
-  assert.deepEqual(getRelatedProducts('p-binh-gom-luma').map((p) => p.slug), ['bo-coc-gom-moc']);
+});
+
+test('related products prioritize the same category, fill with other items and exclude self', () => {
+  const related = getRelatedProducts('p-binh-gom-luma');
+  assert.deepEqual(related.map((p) => p.slug), ['bo-coc-gom-moc', 'ghe-an-nordic', 'den-ban-horizon']);
+  assert.equal(new Set(related.map((p) => p.id)).size, related.length);
+  assert.ok(related.every((p) => p.id !== 'p-binh-gom-luma'));
+  assert.deepEqual(getRelatedProducts('p-ghe-an-nordic').map((p) => p.slug), ['binh-gom-luma', 'den-ban-horizon', 'bo-coc-gom-moc']);
+  assert.deepEqual(getRelatedProducts('missing-product'), []);
 });
 
 test('reference prices use consistent Vietnamese formatting', () => {

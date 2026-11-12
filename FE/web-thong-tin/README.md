@@ -8,7 +8,7 @@
 npm ci
 npm run dev          # http://127.0.0.1:5173
 npm run typecheck
-npm test             # 6 kịch bản dữ liệu với Node test runner
+npm test             # 7 kịch bản dữ liệu với Node test runner
 npm run build        # typecheck + production build
 npm run preview      # http://127.0.0.1:4173
 ```
@@ -23,10 +23,14 @@ Dùng Node.js >=22.12. Test sử dụng tính năng loại bỏ kiểu TypeScrip
 | `/san-pham` | Bốn sản phẩm, tìm theo tên, một danh mục, sort giá/nổi bật |
 | `/san-pham?q=ghe+an` | Ví dụ tìm kiếm không dấu |
 | `/san-pham?category=gom-su&sort=price-asc` | Ví dụ bộ lọc có thể chia sẻ/tải lại |
-| `/san-pham/:slug` | Chi tiết, thông số, accordion, sản phẩm cùng danh mục |
+| `/san-pham/:slug` | Chi tiết, thông số, accordion, danh sách sản phẩm tương tự tối đa hai hàng |
 | Đường dẫn sai / slug không có | Giao diện không tìm thấy và link quay về |
 
-Tìm kiếm được thực hiện khi nhấn Enter hoặc nút tìm. Bộ lọc và sort cập nhật ngay; query được giữ trong URL. Card mở chi tiết kèm đường dẫn catalog trước đó, dùng cho CTA “Quay lại danh sách”. Search toàn trang và menu mobile dùng dialog với bàn phím/Escape và focus mặc định của trình duyệt.
+Tìm kiếm được thực hiện khi nhấn Enter hoặc nút tìm. Bộ lọc và sort cập nhật ngay; query được giữ trong URL. Card mở chi tiết kèm đường dẫn catalog trước đó, dùng cho CTA “Quay lại danh sách”. Tìm kiếm trên header là ô nhập có viền, mở trực tiếp catalog theo query; logo nằm bên trái, ô tìm ở bên phải. Mobile bố trí ô tìm trên hàng riêng để dễ nhập. Menu mobile dùng dialog với bàn phím/Escape và focus mặc định của trình duyệt.
+
+Khi đang ở trang sản phẩm, xóa hết nội dung trong ô tìm kiếm (bằng dấu × hoặc bàn phím) tự đưa danh sách về tất cả sản phẩm, bỏ từ khóa và các bộ lọc mà không cần nhấn Enter. Áp dụng cho ô tìm trong danh sách và ô trên header.
+
+Cuối trang chi tiết hiển thị “Sản phẩm tương tự” thẳng lề với nội dung chung, theo cùng lưới card: desktop bốn cột/tối đa tám món, tablet ba cột/tối đa sáu món, mobile hai cột/tối đa bốn món; mỗi kích thước tối đa hai hàng. Ưu tiên cùng danh mục rồi bổ sung món khác theo thứ tự nổi bật, loại trừ món đang xem và không nhân bản để lấp đầy danh sách. Nút “Xem sản phẩm khác” bên dưới mở `/san-pham`.
 
 Gallery chi tiết dùng `ProductGallery`: khi mảng `images` có từ hai ảnh, hiển thị mũi tên ở hai bên ảnh lớn và dải thumbnail ngay bên dưới. Chọn thumbnail cập nhật ảnh lớn; mũi tên chuyển vòng đầu/cuối và đồng bộ viền ảnh đang chọn. Khi focus vào gallery, dùng trái/phải để chuyển ảnh, Home/End để về ảnh đầu/cuối. Một ảnh thì ẩn điều khiển; không có ảnh thì hiện dự phòng.
 
@@ -43,8 +47,10 @@ Gallery chi tiết dùng `ProductGallery`: khi mảng `images` có từ hai ản
 | `src/components/` | Header, footer, icon, ảnh dự phòng, ProductGallery và card dùng chung |
 | `src/pages/` | Nội dung các trang |
 | `src/styles/styles.css` | Token, typography, layout, responsive và reduced motion |
-| `public/images/` | Ảnh WebP giữ kích thước gốc và bản nhỏ 600 px; nguồn ở các thư mục con trong `Art/Prod/` |
+| `public/images/` | Ảnh WebP giữ kích thước gốc và bản nhỏ 600 px; cấu trúc danh mục/từng món khớp với `Art/Prod/` |
 | `tests/catalog.test.mjs` | Tìm kiếm, kết hợp bộ lọc, sort không đổi nguồn, URL, slug/liên quan và tiền |
+
+Đường dẫn ảnh theo danh mục và từng món: ví dụ nguồn `Art/Prod/Ghe/Ghe-an-Nordic/ghe-an-nordic-gan.png` tương ứng `/images/Ghe/Ghe-an-Nordic/ghe-an-nordic-gan.webp` và `/images/Ghe/Ghe-an-Nordic/ghe-an-nordic-gan-600.webp`. Khi di chuyển ảnh nguồn, đồng bộ thư mục trong `public/images/` và đường dẫn ở `src/data/catalog.ts`; không tham chiếu trực tiếp thư mục `Art/` từ FE.
 
 Khi thêm sản phẩm: tạo ID/slug duy nhất, gắn danh mục, nhập giá số nguyên VND, thêm mô tả và ảnh/alt, chỉ nhập thông số có nguồn. Cập nhật kiểu/query nếu thêm danh mục hoặc cách sắp xếp. Giữ component đọc qua service; khi nối BE sẽ cần bổ sung trạng thái tải/lỗi thực tế cùng hợp đồng API.
 
@@ -59,7 +65,7 @@ Tham chiếu gốc ở `../../Art/DesignUI/`: homepage, catalog, product detail,
 - Chi tiết giữ ảnh trái/thông tin phải ở desktop và một cột mobile; thông số thiếu ghi rõ thay vì tạo dữ liệu giả.
 - Bỏ tim, giỏ, số lượng mua và CTA mua theo phạm vi mới; dùng CTA xem/điều hướng. Nav dùng Trang chủ, Sản phẩm, Về Luma.
 - Hero dùng ảnh phòng khách sẵn có vì chưa có ảnh hero trùng mockup. Mobile đặt chữ trên nền kem dưới ảnh để dễ đọc.
-- Gallery dùng ảnh đã có: Ghế ăn Nordic gồm ảnh toàn cảnh và ảnh cận từ `Art/Prod/Ghe/`; các món khác hiện có một ảnh. Không tạo thêm góc chụp hoặc ảnh màu/vật liệu giả. Giá và mô tả đang là nội dung mẫu; các tuyên bố “bền vững”/giao hàng/bảo hành chưa xác nhận không được đưa vào UI.
+- Gallery dùng ảnh đã có: Ghế ăn Nordic gồm ảnh toàn cảnh và ảnh cận từ `Art/Prod/Ghe/Ghe-an-Nordic/`; các món khác hiện có một ảnh. Không tạo thêm góc chụp hoặc ảnh màu/vật liệu giả. Giá và mô tả đang là nội dung mẫu; các tuyên bố “bền vững”/giao hàng/bảo hành chưa xác nhận không được đưa vào UI.
 
 ## Giới hạn hiện tại
 

@@ -54,7 +54,7 @@ export function ProductGallery({ images, name }: { images: readonly ProductImage
           <Photo image={{ ...image, alt: '' }} sizes="96px" />
         </button>
       ))}</div> : null}
-      <div className="gallery-caption"><p className="image-caption">{name} · Luma</p>{hasMultiple ? <p className="gallery-counter" role="status" aria-live="polite" aria-atomic="true">Ảnh {index + 1} / {images.length}</p> : null}</div>
+      {hasMultiple ? <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">Ảnh {index + 1} / {images.length}</p> : null}
     </section>
   );
 }

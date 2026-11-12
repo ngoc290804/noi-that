@@ -47,7 +47,9 @@ export function CatalogPage() {
           <p className="result-count" role="status">{total} sản phẩm{query.q ? <> cho “{query.q}”</> : null}</p>
           <form key={canonical} className="catalog-search search-form" role="search" onSubmit={submitSearch}>
             <label className="sr-only" htmlFor="catalog-search">Tìm theo tên sản phẩm</label>
-            <input id="catalog-search" name="q" type="search" defaultValue={query.q} maxLength={120} placeholder="Tìm theo tên sản phẩm…" />
+            <input id="catalog-search" name="q" type="search" defaultValue={query.q} maxLength={120} placeholder="Tìm theo tên sản phẩm…" onChange={(event) => {
+              if (event.currentTarget.value === '' && (query.q || query.category || query.sort !== 'featured')) reset();
+            }} />
             <button type="submit" className="icon-button" aria-label="Tìm sản phẩm"><Icon name="search" /></button>
           </form>
         </div>
