@@ -65,7 +65,7 @@ Dùng Node.js để chạy/build FE. Dữ liệu ban đầu nằm trong ứng d�
 
 ### 2.2. Phân tích tài nguyên UI hiện có
 
-Đã phân tích 6 ảnh UI, 6 ảnh sản phẩm/không gian và prototype HTML/CSS. Hướng thị giác giữ nguyên: nền trắng/kem, xanh rừng cho điểm nhấn, ảnh ánh sáng tự nhiên, font Be Vietnam Pro, icon nét mảnh và nhiều khoảng thở.
+Đã phân tích 6 ảnh UI và prototype HTML/CSS; thư mục sản phẩm hiện có 7 ảnh gồm 5 ảnh cho 4 sản phẩm và 2 ảnh không gian. Hướng thị giác giữ nguyên: nền trắng/kem, xanh rừng cho điểm nhấn, ảnh ánh sáng tự nhiên, font Be Vietnam Pro, icon nét mảnh và nhiều khoảng thở.
 
 #### 2.2.1. Ảnh UI và cách áp dụng theo phạm vi mới
 
@@ -85,7 +85,7 @@ Dùng Node.js để chạy/build FE. Dữ liệu ban đầu nằm trong ứng d�
 - **Catalog sai dữ liệu:** card ghế đầu thiếu tên/giá ngay dưới ảnh; một ảnh cận sofa mang tên Ghế ăn Nordic; ảnh tủ/bình mang tên Bộ cốc Gốm Mộc và giá `4500.000đ`, khác `450.000đ` ở trang chủ. Dùng dữ liệu chung để không sao chép các lỗi này.
 - **Card chưa đồng đều:** chọn grid đều với cùng tỷ lệ ảnh, vị trí tên và giá; không dựng bố cục masonry từ các chỗ lệch của mockup.
 - **Hero chưa có đúng ảnh nguồn:** mockup là tủ/bình/đèn, còn `phong-khach-nordic.jpg` có sofa làm trọng tâm. Dùng ảnh phòng khách tạm và ghi nhận khác biệt; muốn khớp cần ảnh hero riêng, không dùng cả mockup chứa chữ làm banner.
-- **Gallery thiếu ảnh:** thư mục chỉ có một ảnh ghế. Bản đầu hiển thị một ảnh chính; chỉ dùng thumbnail khi có ảnh bổ sung, không giả nhiều góc chụp bằng cùng một ảnh.
+- **Gallery đã bổ sung ảnh:** Ghế ăn Nordic có ảnh toàn cảnh và ảnh cận `Ghe/ghe-an-nordic-gan.png`; đã gắn cả hai vào gallery. Ba món còn lại mỗi món một ảnh, không nhân bản ảnh để tạo thumbnail giả.
 - **Mô tả và nhãn:** sửa câu tiếng Việt lỗi; Việt hóa `Wood finish`, `Oak`, `Walnut`. Không đồng nhất `Walnut` với “Sồi hun khói”. Chỉ hiển thị chất liệu/màu đã có dữ liệu xác nhận.
 - **Mobile:** giữ grid hai cột ở chiều rộng điện thoại thông thường; tăng vùng chạm, cho tên dài xuống dòng và giữ giá rõ.
 - **Guide/CSS khác nhau:** chuẩn hóa typography/radius theo mục 2.4; card phẳng, ảnh bo nhẹ, không trộn nhiều kiểu bóng và bo góc trong một grid.
@@ -105,16 +105,16 @@ Khi dựng FE, giữ prototype và ảnh gốc trong `Art/` để đối chiếu
 
 | ID đề xuất | Tên | Giá mẫu VND | Danh mục | Ảnh trong `Art/Prod/` |
 | --- | --- | --- | --- | --- |
-| `p-binh-gom-luma` | Bình gốm Luma | 620000 | Gốm sứ | `binh-gom-luma.jpg` |
-| `p-ghe-an-nordic` | Ghế ăn Nordic | 2900000 | Ghế & Bàn | `ghe-an-nordic.jpg` |
-| `p-den-ban-horizon` | Đèn bàn Horizon | 1250000 | Đèn | `den-ban-horizon.jpg` |
-| `p-bo-coc-gom-moc` | Bộ cốc Gốm Mộc | 450000 | Gốm sứ | `bo-coc-gom-moc.jpg` |
+| `p-binh-gom-luma` | Bình gốm Luma | 620000 | Gốm sứ | `Gom-su/binh-gom-luma.jpg` (1 ảnh) |
+| `p-ghe-an-nordic` | Ghế ăn Nordic | 2900000 | Ghế & Bàn | `Ghe/ghe-an-nordic.jpg`, `Ghe/ghe-an-nordic-gan.png` (2 ảnh) |
+| `p-den-ban-horizon` | Đèn bàn Horizon | 1250000 | Đèn | `Den/den-ban-horizon.jpg` (1 ảnh) |
+| `p-bo-coc-gom-moc` | Bộ cốc Gốm Mộc | 450000 | Gốm sứ | `Gom-su/bo-coc-gom-moc.jpg` (1 ảnh) |
 
 Giá là dữ liệu mẫu từ ảnh trang chủ/HTML, chưa phải bảng giá kinh doanh đã duyệt. Số tiền lưu dạng số nguyên VND và định dạng thống nhất như `2.900.000đ` khi hiển thị.
 
-Hai ảnh `phong-khach-nordic.jpg` và `phong-an-japandi.jpg` dùng cho phần cảm hứng không gian trên trang chủ. Không đưa sofa/bàn ăn thành sản phẩm có thể xem riêng chỉ vì xuất hiện trong ảnh khi chưa có dữ liệu và ảnh sản phẩm phù hợp.
+Hai ảnh trong `Art/Prod/Khong-gian/` là `phong-khach-nordic.jpg` và `phong-an-japandi.jpg`, dùng cho phần cảm hứng không gian trên trang chủ. Không đưa sofa/bàn ăn thành sản phẩm có thể xem riêng chỉ vì xuất hiện trong ảnh khi chưa có dữ liệu và ảnh sản phẩm phù hợp.
 
-Sáu ảnh gốc đều 1200 × 896 px, gần tỷ lệ 4:3. Khi dựng FE, tạo bản ảnh phù hợp vị trí hiển thị; giữ nguyên nguồn gốc để có thể crop lại.
+Sáu ảnh JPG gốc có kích thước 1200 × 896 px; ảnh PNG cận cảnh ghế có kích thước 1024 × 764 px. FE dùng bản WebP giữ kích thước nguồn và bản nhỏ rộng 600 px, khai báo kích thước thực trong dữ liệu/srcset; ảnh gốc được giữ nguyên.
 
 #### 2.3.2. Mô hình dữ liệu tối thiểu
 
@@ -199,7 +199,7 @@ Thông tin giới thiệu/liên hệ ban đầu có thể là section trong tran
 - Breadcrumb: Trang chủ / Sản phẩm / Tên món.
 - Desktop: ảnh/gallery bên trái, tên/giá/mô tả/thông số bên phải. Mobile: ảnh trước, thông tin sau.
 - Ảnh chính có tỷ lệ hợp lý, không crop mất vật thể; có alt. Gallery chỉ xuất hiện khi thật sự có nhiều ảnh.
-- Đã bổ sung gallery: có từ hai ảnh thì hiện mũi tên trái/phải chồng ở hai bên ảnh lớn và thumbnail ngay dưới để chọn, có viền đánh dấu ảnh hiện tại. Chuyển vòng đầu/cuối, hỗ trợ bàn phím; một ảnh thì ẩn các điều khiển này. Dữ liệu hiện vẫn một ảnh mỗi món, chờ bổ sung ảnh thật.
+- Đã bổ sung gallery: có từ hai ảnh thì hiện mũi tên trái/phải chồng ở hai bên ảnh lớn và thumbnail ngay dưới để chọn, có viền đánh dấu ảnh hiện tại. Chuyển vòng đầu/cuối, hỗ trợ bàn phím; một ảnh thì ẩn các điều khiển này. Dữ liệu hiện có hai ảnh cho Ghế ăn Nordic, một ảnh cho mỗi món còn lại.
 - Hiển thị tên, giá tham khảo, mô tả ngắn, mô tả chi tiết, chất liệu/kích thước nếu có.
 - Thuộc tính màu/chất liệu hiện dưới dạng thông tin đọc; chưa dựng chọn phiên bản mua hàng, số lượng, tồn kho hoặc thanh mua cố định.
 - Dùng accordion cho nội dung dài như thông số/hướng dẫn bảo quản khi có dữ liệu. Không tạo các cam kết giao hàng/bảo hành chưa xác nhận.

@@ -1,12 +1,12 @@
 import type { Category, Product, ProductImage } from '../types/catalog';
 
-function image(name: string, alt: string): ProductImage {
+function image(name: string, alt: string, width = 1200, height = 896): ProductImage {
   return {
     src: `/images/${name}.webp`,
     thumbnail: `/images/${name}-600.webp`,
     alt,
-    width: 1200,
-    height: 896,
+    width,
+    height,
   };
 }
 
@@ -36,7 +36,10 @@ export const products: readonly Product[] = [
     categoryId: 'ban-ghe', priceVnd: 2900000, displayOrder: 2, isFeatured: true,
     shortDescription: 'Những đường cong mộc mạc, dành cho góc sum vầy mỗi ngày.',
     description: 'Ghế ăn Nordic mang dáng vẻ thanh thoát với phần tựa lưng cong và mặt ngồi đan. Một gợi ý cho bàn ăn ấm cúng, góc đọc sách hoặc không gian bạn muốn dành thêm một chỗ ngồi.',
-    images: [image('ghe-an-nordic', 'Ghế ăn Nordic có tựa lưng cong và mặt ngồi đan bên rèm cửa')],
+    images: [
+      image('ghe-an-nordic', 'Ghế ăn Nordic có tựa lưng cong và mặt ngồi đan bên rèm cửa'),
+      image('ghe-an-nordic-gan', 'Cận cảnh tựa lưng và mặt ngồi đan của Ghế ăn Nordic', 1024, 764),
+    ],
     specifications: pendingSpecifications,
   },
   {

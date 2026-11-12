@@ -30,7 +30,7 @@ Tìm kiếm được thực hiện khi nhấn Enter hoặc nút tìm. Bộ lọc
 
 Gallery chi tiết dùng `ProductGallery`: khi mảng `images` có từ hai ảnh, hiển thị mũi tên ở hai bên ảnh lớn và dải thumbnail ngay bên dưới. Chọn thumbnail cập nhật ảnh lớn; mũi tên chuyển vòng đầu/cuối và đồng bộ viền ảnh đang chọn. Khi focus vào gallery, dùng trái/phải để chuyển ảnh, Home/End để về ảnh đầu/cuối. Một ảnh thì ẩn điều khiển; không có ảnh thì hiện dự phòng.
 
-Để bổ sung ảnh cho một sản phẩm, thêm các đối tượng ảnh thật vào mảng `images` trong `src/data/catalog.ts`, mỗi ảnh gồm `src`, `thumbnail`, `alt`, `width`, `height`. Hiện dữ liệu sản phẩm vẫn chỉ có một ảnh mỗi món, nên điều khiển nhiều ảnh tự xuất hiện sau khi bổ sung ảnh; không dùng ảnh của món khác để làm gallery cho sản phẩm.
+Để bổ sung ảnh cho một sản phẩm, thêm các đối tượng ảnh thật vào mảng `images` trong `src/data/catalog.ts`, mỗi ảnh gồm `src`, `thumbnail`, `alt`, `width`, `height`. Ghế ăn Nordic hiện có hai ảnh (toàn cảnh, cận cảnh); bình gốm, bộ cốc và đèn mỗi món có một ảnh. Không dùng ảnh của món khác để làm gallery cho sản phẩm.
 
 ## Vị trí chỉnh sửa
 
@@ -43,7 +43,7 @@ Gallery chi tiết dùng `ProductGallery`: khi mảng `images` có từ hai ản
 | `src/components/` | Header, footer, icon, ảnh dự phòng, ProductGallery và card dùng chung |
 | `src/pages/` | Nội dung các trang |
 | `src/styles/styles.css` | Token, typography, layout, responsive và reduced motion |
-| `public/images/` | Ảnh WebP 600/1200 px, tạo từ ảnh gốc trong `Art/Prod/` |
+| `public/images/` | Ảnh WebP giữ kích thước gốc và bản nhỏ 600 px; nguồn ở các thư mục con trong `Art/Prod/` |
 | `tests/catalog.test.mjs` | Tìm kiếm, kết hợp bộ lọc, sort không đổi nguồn, URL, slug/liên quan và tiền |
 
 Khi thêm sản phẩm: tạo ID/slug duy nhất, gắn danh mục, nhập giá số nguyên VND, thêm mô tả và ảnh/alt, chỉ nhập thông số có nguồn. Cập nhật kiểu/query nếu thêm danh mục hoặc cách sắp xếp. Giữ component đọc qua service; khi nối BE sẽ cần bổ sung trạng thái tải/lỗi thực tế cùng hợp đồng API.
@@ -59,7 +59,7 @@ Tham chiếu gốc ở `../../Art/DesignUI/`: homepage, catalog, product detail,
 - Chi tiết giữ ảnh trái/thông tin phải ở desktop và một cột mobile; thông số thiếu ghi rõ thay vì tạo dữ liệu giả.
 - Bỏ tim, giỏ, số lượng mua và CTA mua theo phạm vi mới; dùng CTA xem/điều hướng. Nav dùng Trang chủ, Sản phẩm, Về Luma.
 - Hero dùng ảnh phòng khách sẵn có vì chưa có ảnh hero trùng mockup. Mobile đặt chữ trên nền kem dưới ảnh để dễ đọc.
-- Chỉ một ảnh thật mỗi sản phẩm; chưa tạo gallery nhiều góc hoặc ảnh màu/vật liệu giả. Giá và mô tả đang là nội dung mẫu; các tuyên bố “bền vững”/giao hàng/bảo hành chưa xác nhận không được đưa vào UI.
+- Gallery dùng ảnh đã có: Ghế ăn Nordic gồm ảnh toàn cảnh và ảnh cận từ `Art/Prod/Ghe/`; các món khác hiện có một ảnh. Không tạo thêm góc chụp hoặc ảnh màu/vật liệu giả. Giá và mô tả đang là nội dung mẫu; các tuyên bố “bền vững”/giao hàng/bảo hành chưa xác nhận không được đưa vào UI.
 
 ## Giới hạn hiện tại
 
