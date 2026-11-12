@@ -6,3 +6,7 @@ dist/
 *.local
 *.tsbuildinfo
 .DS_Store
+target/
+*.log
+BE/.local/
+__pycache__/
