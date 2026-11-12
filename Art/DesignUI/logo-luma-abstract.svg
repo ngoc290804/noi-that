@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 180" width="360" height="180" fill="none">
+  <!-- Abstract Continuous-Line Stylized "luma" -->
+  <rect width="360" height="180" rx="24" fill="#F3EFE9"/>
+  <!-- Continuous flowing monoline subtly forming l - u - m - a -->
+  <path d="M56 54V112C56 122 64 128 74 128H92C102 128 110 120 110 110V88C110 108 118 128 134 128C150 128 154 110 154 96C154 82 164 74 176 74C188 74 196 84 196 98V128M196 98C196 84 206 74 218 74C230 74 238 84 238 98V116C238 124 244 128 252 128C262 128 268 120 268 110"
+        stroke="#1D3B2D" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Stylized abstract 'a' as a warm sun / dome lamp silhouette -->
+  <circle cx="290" cy="102" r="21" stroke="#1D3B2D" stroke-width="6.5"/>
+  <path d="M311 102V125" stroke="#1D3B2D" stroke-width="6.5" stroke-linecap="round"/>
+  <!-- Warm oak accent dot -->
+  <circle cx="290" cy="102" r="6" fill="#C49A6C"/>
+</svg>

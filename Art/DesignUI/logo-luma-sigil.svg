@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" fill="none">
+  <!-- Geometric Abstract "luma" Sigil -->
+  <rect width="240" height="240" rx="36" fill="#FFFFFF"/>
+  <rect x="16" y="16" width="208" height="208" rx="28" stroke="#E7E2DA" stroke-width="2"/>
+  <!-- 'l' vertical pillar -->
+  <rect x="54" y="64" width="12" height="112" rx="6" fill="#1D3B2D"/>
+  <!-- 'u' ceramic bowl curve -->
+  <path d="M84 108V142C84 159.673 98.3269 174 116 174C133.673 174 148 159.673 148 142V108" stroke="#1D3B2D" stroke-width="11" stroke-linecap="round"/>
+  <!-- 'm' twin Japandi arches hovering above -->
+  <path d="M84 94C84 78.536 96.536 66 112 66C127.464 66 140 78.536 140 94" stroke="#1D3B2D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M140 94C140 78.536 152.536 66 168 66C183.464 66 196 78.536 196 94" stroke="#1D3B2D" stroke-width="8" stroke-linecap="round"/>
+  <!-- 'a' warm sun orb -->
+  <circle cx="176" cy="148" r="20" fill="#C49A6C"/>
+  <circle cx="176" cy="148" r="7" fill="#FFFFFF"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" fill="none">
+  <!-- Minimalist Architectural L Monogram for Luma -->
+  <rect width="240" height="240" rx="36" fill="#F3EFE9"/>
+  <!-- Outer subtle frame -->
+  <rect x="24" y="24" width="192" height="192" rx="24" stroke="#1D3B2D" stroke-width="2" stroke-opacity="0.18"/>
+  <!-- Sculptural L mark -->
+  <path d="M84 62V164C84 170.627 89.3726 176 96 176H164" stroke="#1D3B2D" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Subtle warm accent dot (sunlight / minimal detail) -->
+  <circle cx="156" cy="76" r="9" fill="#C49A6C"/>
+</svg>

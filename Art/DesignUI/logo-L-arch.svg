@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" fill="none">
+  <!-- Japandi Arch + Letter L Emblem -->
+  <rect width="240" height="240" rx="36" fill="#1D3B2D"/>
+  <!-- Minimalist arch window silhouette -->
+  <path d="M68 184V108C68 79.2812 91.2812 56 120 56C148.719 56 172 79.2812 172 108V184" stroke="#F3EFE9" stroke-width="3" stroke-opacity="0.35"/>
+  <!-- Bold clean L inside the arch -->
+  <path d="M96 88V158H148" stroke="#F3EFE9" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
