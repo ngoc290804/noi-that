@@ -15,7 +15,7 @@ mvn spring-boot:run
 
 Spring Boot tự đọc `.env` từ thư mục làm việc hiện tại; cũng có thể truyền các biến môi trường tương ứng. File này theo cú pháp Java properties: không thêm `export` và không bao giá trị bằng dấu nháy. `.env` bị loại khỏi Git; `.env.example` chỉ chứa placeholder. **Không đặt thông tin DB trong FE hoặc biến `VITE_*`.**
 
-Ứng dụng chạy tại `http://localhost:8080`. Cấu hình `SERVER_PORT` để đổi cổng, `CORS_ALLOWED_ORIGINS` để đổi danh sách origin FE, phân cách bằng dấu phẩy. Mặc định chấp nhận `http://127.0.0.1:5173` và `http://localhost:5173` cho GET/HEAD/OPTIONS trên API công khai; API quản lý ảnh hỗ trợ thêm POST và header Authorization.
+Ứng dụng chạy tại `http://localhost:8080`. Cấu hình `PORT` khi deploy hoặc `SERVER_PORT` khi chạy local để đổi cổng; nếu dùng cả hai, đặt cùng giá trị. Cấu hình `CORS_ALLOWED_ORIGINS` để đổi danh sách origin FE, phân cách bằng dấu phẩy. Mặc định chấp nhận `http://127.0.0.1:5173` và `http://localhost:5173` cho GET/HEAD/OPTIONS trên API công khai; API quản lý ảnh hỗ trợ thêm POST và header Authorization.
 
 Neon cấp URL dạng `postgresql://user:password@host/database?...`. Với JDBC, tách thành:
 
@@ -173,6 +173,44 @@ Các trường có trong source (tên, giá, mô tả, gallery, thông số, th�
 File ảnh và dữ liệu mẫu trong FE được giữ nguyên. FE hiện đã đọc API công khai qua `src/services/catalog.ts`; dữ liệu local chỉ còn là fixture/nguồn cho script đồng bộ. Cấu hình proxy/API theo hướng dẫn FE. Khởi tạo DB mới bằng Flyway vẫn seed đường dẫn ảnh local, sau đó chạy lệnh đồng bộ để chuyển ảnh lên Cloudinary.
 
 Đã đồng bộ catalog hiện tại: 3 danh mục, 4 sản phẩm, 1 trang chủ và 7 ảnh Cloudinary. Lần chạy lại dùng lại cả 7 ảnh, không tạo ảnh mới và không thay đổi dữ liệu DB. UUID ban đầu và các quan hệ được xác minh giữ nguyên.
+
+## Deploy BE bằng Docker trên Vercel
+
+`BE/Dockerfile` build JAR bằng Maven/Java 17, sau đó chạy bằng Java 17 JRE với UID không phải root. Image chỉ chứa JAR; `.dockerignore` giới hạn build context vào `pom.xml` và `src/`, loại `.env`, khóa riêng, log và bản sao lưu. Không cần build JAR trước trên máy cá nhân.
+
+Sau khi đẩy các file lên GitHub, tạo hoặc cập nhật project BE trên Vercel:
+
+1. **Root Directory:** `BE`.
+2. **Application Preset:** `Container`. Với project mới, Vercel tự nhận diện Dockerfile. Với project đã tạo bằng `Other`, đổi preset sang `Container` trong Settings.
+3. **Build Command / Output Directory / Install Command:** để mặc định của Container, bỏ các override Maven/npm cũ nếu có. Dockerfile tự thực hiện bước build và khởi động.
+4. Nhập các biến môi trường bên dưới rồi **Deploy**. Thêm cho từng môi trường Production/Preview mà bạn sử dụng.
+
+| Biến | Giá trị |
+| --- | --- |
+| `PORT` | `8080` — cần đặt rõ trên Vercel để bộ định tuyến và ứng dụng dùng cùng cổng |
+| `DB_URL` | JDBC URL của Neon như ví dụ phía trên |
+| `DB_USERNAME` | Tài khoản Neon |
+| `DB_PASSWORD` | Mật khẩu Neon |
+| `CORS_ALLOWED_ORIGINS` | Origin FE thật, ví dụ `https://your-frontend.vercel.app`, không có dấu `/` cuối; nhiều origin cách nhau bằng dấu phẩy |
+| `CLOUDINARY_CLOUD_NAME` | Cloud name, nếu dùng API ảnh |
+| `CLOUDINARY_API_KEY` | API key, nếu dùng API ảnh |
+| `CLOUDINARY_API_SECRET` | API secret, nếu dùng API ảnh |
+| `MEDIA_UPLOAD_TOKEN` | Token riêng tối thiểu 32 ký tự, nếu dùng API ảnh |
+
+Không cần upload `.env`: nhập giá trị trong Vercel Environment Variables, không bao giá trị bằng dấu nháy. Nếu đã có `SERVER_PORT` trong project Vercel, xóa biến đó hoặc đặt cùng `8080`. Flyway chạy migration khi ứng dụng khởi động, vì vậy Neon phải truy cập được và tài khoản DB phải đủ quyền như phần migration phía trên.
+
+Sau deploy, kiểm tra `https://your-backend.vercel.app/actuator/health` trả `{"status":"UP"}` và `/api/products` trả dữ liệu. Để FE gọi BE này, đặt `VITE_API_BASE_URL=https://your-backend.vercel.app/api` trong project FE rồi redeploy FE; thay tên miền ví dụ bằng tên miền thực tế.
+
+Theo [tài liệu Container Runtime của Vercel](https://vercel.com/docs/functions/runtimes/container), tính năng đang ở Beta trên tất cả các gói. Vercel mặc định định tuyến container tới cổng 80 nếu không đặt `PORT`, nên cấu hình `PORT=8080` ở trên là cần thiết với image này.
+
+Có thể thử Docker local từ thư mục gốc repo:
+
+```bash
+docker build -t luma-api ./BE
+docker run --rm --name luma-api -p 8080:8080 --env-file BE/.env -e PORT=8080 luma-api
+```
+
+Hoặc chạy `docker build -t luma-api .` từ trong `BE/`. Lệnh `--env-file` chỉ truyền biến lúc chạy, không thêm `.env` vào image. Dùng file `.env` theo cú pháp không có `export` hoặc dấu nháy như hướng dẫn local.
 
 ## Kiểm thử và đóng gói
 

@@ -1,0 +1,15 @@
+# Only application sources and the Maven project are needed to build the image.
+**
+!pom.xml
+!src/
+!src/**
+
+# Keep credentials and generated files out even if added under src later.
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.log
+**/target/
+**/.local/
+**/.git/
