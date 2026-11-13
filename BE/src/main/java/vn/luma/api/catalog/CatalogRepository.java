@@ -69,6 +69,59 @@ public class CatalogRepository {
             Map.of("slug", slug), productMapper()).stream().findFirst();
     }
 
+    public Optional<ProductSummary> getProductSummary(String slug) {
+        return jdbc.query("""
+            SELECT p.id, p.slug, p.name, p.category_id, p.price_vnd, p.short_description,
+                (p.images->0)::text AS primary_image
+            """ + PUBLIC_PRODUCTS + " AND p.slug = :slug", Map.of("slug", slug), (rs, row) ->
+            new ProductSummary(rs.getObject("id", UUID.class), rs.getString("slug"), rs.getString("name"),
+                rs.getObject("category_id", UUID.class), rs.getLong("price_vnd"), rs.getString("short_description"),
+                rs.getString("primary_image") == null ? null : decode(rs.getString("primary_image"), new TypeReference<ProductImage>() {})))
+            .stream().findFirst();
+    }
+
+    public Optional<List<ProductImage>> getProductImages(String slug) {
+        return jdbc.query("SELECT p.images::text " + PUBLIC_PRODUCTS + " AND p.slug = :slug",
+            Map.of("slug", slug), (rs, row) -> decode(rs.getString(1), new TypeReference<List<ProductImage>>() {}))
+            .stream().findFirst();
+    }
+
+    public Optional<ProductDetails> getProductDetails(String slug) {
+        return jdbc.query("""
+            SELECT p.description, p.specifications::text, p.length_cm, p.width_cm, p.height_cm, p.material, p.color
+            """ + PUBLIC_PRODUCTS + " AND p.slug = :slug", Map.of("slug", slug), (rs, row) ->
+            new ProductDetails(rs.getString("description"), decode(rs.getString("specifications"), new TypeReference<List<Specification>>() {}),
+                rs.getBigDecimal("length_cm"), rs.getBigDecimal("width_cm"), rs.getBigDecimal("height_cm"),
+                rs.getString("material"), rs.getString("color")))
+            .stream().findFirst();
+    }
+
+    public Optional<List<ProductPreview>> getRelatedProducts(String slug, int size) {
+        // One bounded query: same category first, then other public products. The left join
+        // distinguishes a missing source product (no rows) from no recommendations (one null row).
+        var rows = jdbc.query("""
+            WITH source AS (SELECT p.id, p.category_id
+            """ + PUBLIC_PRODUCTS + " AND p.slug = :slug) " + """
+            SELECT related.id, related.slug, related.name, related.price_vnd, related.images
+            FROM source s LEFT JOIN LATERAL (
+                SELECT p.id, p.slug, p.name, p.price_vnd, p.display_order,
+                    (p.category_id = s.category_id) AS same_category,
+                    jsonb_build_array(p.images->0)::text AS images
+            """ + PUBLIC_PRODUCTS + """
+                AND p.id <> s.id
+                ORDER BY (p.category_id = s.category_id) DESC, p.display_order, p.id
+                LIMIT :size
+            ) related ON true
+            ORDER BY related.same_category DESC, related.display_order, related.id
+            """, Map.of("slug", slug, "size", size), (rs, row) -> {
+                if (rs.getObject("id") == null) return null;
+                var images = decode(rs.getString("images"), new TypeReference<List<ProductImage>>() {});
+                return new ProductPreview(rs.getObject("id", UUID.class), rs.getString("slug"), rs.getString("name"),
+                    rs.getLong("price_vnd"), images.stream().filter(java.util.Objects::nonNull).toList());
+            });
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.stream().filter(java.util.Objects::nonNull).toList());
+    }
+
     public List<Category> listCategories() {
         return jdbc.query("""
             SELECT id, slug, name FROM luma.categories

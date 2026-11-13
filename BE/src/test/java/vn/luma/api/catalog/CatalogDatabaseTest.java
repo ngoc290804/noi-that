@@ -26,6 +26,52 @@ class CatalogDatabaseTest {
     @Autowired JdbcTemplate jdbc;
 
     @Test
+    void productSectionsMatchFullDetailAndRelatedProductsPrioritizeCategory() {
+        var product = catalog.getProduct("binh-gom-luma").orElseThrow();
+        var summary = catalog.getProductSummary(product.slug()).orElseThrow();
+        var details = catalog.getProductDetails(product.slug()).orElseThrow();
+        assertThat(summary.id()).isEqualTo(product.id());
+        assertThat(summary.primaryImage()).isEqualTo(product.images().get(0));
+        assertThat(catalog.getProductImages(product.slug()).orElseThrow()).isEqualTo(product.images());
+        assertThat(details.description()).isEqualTo(product.description());
+        assertThat(details.specifications()).isEqualTo(product.specifications());
+        assertThat(details.lengthCm()).isEqualTo(product.lengthCm());
+        assertThat(details.material()).isEqualTo(product.material());
+        var related = catalog.getRelatedProducts(product.slug(), 8).orElseThrow();
+        assertThat(related).extracting(CatalogModels.ProductPreview::slug)
+            .containsExactly("bo-coc-gom-moc", "ghe-an-nordic", "den-ban-horizon");
+        assertThat(related).allSatisfy(item -> {
+            assertThat(item.id()).isNotEqualTo(product.id());
+            assertThat(item.images()).hasSize(1);
+        });
+        assertThat(catalog.getRelatedProducts(product.slug(), 1).orElseThrow())
+            .extracting(CatalogModels.ProductPreview::slug).containsExactly("bo-coc-gom-moc");
+    }
+
+    @Test
+    void splitEndpointsHideUnpublishedProductsAndCategoriesAndHandleEmptyGalleries() {
+        jdbc.update("UPDATE luma.products SET images = '[]'::jsonb WHERE slug = 'binh-gom-luma'");
+        assertThat(catalog.getProductSummary("binh-gom-luma").orElseThrow().primaryImage()).isNull();
+        assertThat(catalog.getProductImages("binh-gom-luma").orElseThrow()).isEmpty();
+        assertThat(catalog.getRelatedProducts("bo-coc-gom-moc", 8).orElseThrow().get(0).images()).isEmpty();
+        jdbc.update("UPDATE luma.categories SET is_published = false WHERE slug = 'gom-su'");
+        assertSplitProductMissing("binh-gom-luma");
+        assertThat(catalog.getRelatedProducts("ghe-an-nordic", 8).orElseThrow())
+            .extracting(CatalogModels.ProductPreview::slug).containsExactly("den-ban-horizon");
+        jdbc.update("UPDATE luma.products SET is_published = false WHERE slug = 'den-ban-horizon'");
+        assertSplitProductMissing("den-ban-horizon");
+        assertThat(catalog.getRelatedProducts("ghe-an-nordic", 8).orElseThrow()).isEmpty();
+        assertSplitProductMissing("missing");
+    }
+
+    private void assertSplitProductMissing(String slug) {
+        assertThat(catalog.getProductSummary(slug)).isEmpty();
+        assertThat(catalog.getProductImages(slug)).isEmpty();
+        assertThat(catalog.getProductDetails(slug)).isEmpty();
+        assertThat(catalog.getRelatedProducts(slug, 8)).isEmpty();
+    }
+
+    @Test
     void searchesVietnameseNamesAndTreatsSqlWildcardsLiterally() {
         assertThat(catalog.listProducts("  GHE AN  ", "ban-ghe", "featured", 0, 24).items())
             .extracting(CatalogModels.Product::slug).containsExactly("ghe-an-nordic");

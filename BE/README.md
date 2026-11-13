@@ -61,6 +61,10 @@ API chỉ trả sản phẩm và danh mục có `is_published = true`; sản ph�
 | --- | --- | --- |
 | GET | `/api/products` | `{ items, total, page, size }` |
 | GET | `/api/products/{slug}` | Chi tiết một sản phẩm; không có/chưa công khai trả 404 |
+| GET | `/api/products/{slug}/summary` | ID, slug, tên, danh mục, giá, giới thiệu ngắn và `primaryImage` (ảnh đầu hoặc null) |
+| GET | `/api/products/{slug}/images` | Mảng metadata bộ ảnh; có thể rỗng |
+| GET | `/api/products/{slug}/details` | Mô tả, thông số, chiều dài/rộng/cao, chất liệu và màu sắc |
+| GET | `/api/products/{slug}/related` | Tối đa 8 thẻ sản phẩm tương tự; `size` từ 1 đến 8, mặc định 8 |
 | GET | `/api/categories` | Mảng `{ id, slug, name }` |
 | GET | `/api/home` | Hero, ảnh không gian, ID sản phẩm nổi bật; API tổng hợp được giữ tương thích |
 | GET | `/api/home/hero` | `{ heroTitle, heroDescription, heroImage }` — chỉ nội dung banner |
@@ -69,6 +73,10 @@ API chỉ trả sản phẩm và danh mục có `is_published = true`; sản ph�
 | GET | `/actuator/health` | Trạng thái ứng dụng và kết nối DB; không lộ chi tiết DB |
 
 FE trang chủ gọi ba API thành phần song song, mỗi khối hiển thị và thử lại độc lập. Mỗi API chỉ chạy một truy vấn; danh sách nổi bật lọc `is_featured` và trạng thái công khai của cả sản phẩm/danh mục, sắp theo `display_order, id` rồi giới hạn ngay trong SQL, không đọc toàn bộ catalog hoặc chạy truy vấn đếm. Banner và không gian trả 404 khi nội dung trang chủ chưa công khai; danh sách nổi bật không có sản phẩm trả mảng rỗng. Khi phát hành thay đổi này, deploy BE trước FE để các endpoint mới sẵn sàng. Không cần migration DB mới.
+
+Trang chi tiết FE gọi `summary`, `images` và `details` song song; `summary` nhỏ gọn đủ để hiển thị tên, giá, giới thiệu và ảnh chính ngay khi có dữ liệu. Mỗi phần có lỗi/thử lại độc lập. `related` chỉ gọi khi cuộn gần phần sản phẩm tương tự (cách viewport tối đa 200 px), qua một request thay cho hai request danh sách có đếm tổng. Mỗi endpoint mới chạy một truy vấn, chỉ chọn các cột cần thiết; ảnh đầu được trích ngay trong SQL cho summary và related, không đọc toàn bộ gallery để tạo thẻ.
+
+`related` ưu tiên cùng danh mục rồi bổ sung sản phẩm khác theo `display_order, id`, loại trừ sản phẩm hiện tại và giới hạn trong SQL. Mỗi thẻ chỉ có `{ id, slug, name, priceVnd, images }`, `images` chứa tối đa một ảnh. Không có gợi ý trả `[]`; slug không tồn tại hoặc sản phẩm/danh mục bị ẩn trả 404 cho cả bốn endpoint. API chi tiết tổng hợp cũ giữ nguyên. Deploy BE trước FE; không cần migration DB mới.
 
 Query của `/api/products`:
 

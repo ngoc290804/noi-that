@@ -10,6 +10,15 @@ public final class CatalogModels {
     public record Category(UUID id, String slug, String name) {}
     public record ProductImage(String src, String thumbnail, String alt, int width, int height, String publicId) {}
     public record Specification(String label, String value, String unit) {}
+    public record ProductSummary(
+        UUID id, String slug, String name, UUID categoryId, long priceVnd,
+        String shortDescription, ProductImage primaryImage
+    ) {}
+    public record ProductDetails(
+        String description, List<Specification> specifications,
+        BigDecimal lengthCm, BigDecimal widthCm, BigDecimal heightCm, String material, String color
+    ) {}
+    public record ProductPreview(UUID id, String slug, String name, long priceVnd, List<ProductImage> images) {}
     public record Product(
         UUID id, String slug, String name, UUID categoryId, long priceVnd,
         String shortDescription, String description, List<ProductImage> images,

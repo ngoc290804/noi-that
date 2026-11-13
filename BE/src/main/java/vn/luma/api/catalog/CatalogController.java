@@ -41,6 +41,33 @@ public class CatalogController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
     }
 
+    @GetMapping("/products/{slug}/summary")
+    public ProductSummary productSummary(@PathVariable @Size(max = 160) String slug) {
+        return catalog.getProductSummary(slug)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
+    }
+
+    @GetMapping("/products/{slug}/images")
+    public List<ProductImage> productImages(@PathVariable @Size(max = 160) String slug) {
+        return catalog.getProductImages(slug)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
+    }
+
+    @GetMapping("/products/{slug}/details")
+    public ProductDetails productDetails(@PathVariable @Size(max = 160) String slug) {
+        return catalog.getProductDetails(slug)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
+    }
+
+    @GetMapping("/products/{slug}/related")
+    public List<ProductPreview> relatedProducts(
+        @PathVariable @Size(max = 160) String slug,
+        @RequestParam(defaultValue = "8") @Min(1) @Max(8) int size
+    ) {
+        return catalog.getRelatedProducts(slug, size)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
+    }
+
     @GetMapping("/categories")
     public List<Category> categories() {
         return catalog.listCategories();

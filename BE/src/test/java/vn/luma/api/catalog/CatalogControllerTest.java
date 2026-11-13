@@ -144,6 +144,76 @@ class CatalogControllerTest {
     }
 
     @Test
+    void productSectionsUseIndependentQueriesAndSmallResponses() throws Exception {
+        var image = new ProductImage("/image.jpg", "/thumb.jpg", "Ảnh", 1000, 800, null);
+        UUID id = UUID.randomUUID();
+        when(catalog.getProductSummary("chair")).thenReturn(Optional.of(
+            new ProductSummary(id, "chair", "Ghế", UUID.randomUUID(), 123000, "Giới thiệu", image)));
+        when(catalog.getProductImages("chair")).thenReturn(Optional.of(List.of(image)));
+        when(catalog.getProductDetails("chair")).thenReturn(Optional.of(
+            new ProductDetails("Mô tả", List.of(), new BigDecimal("55.25"), null, null, "Gỗ", null)));
+        mvc.perform(get("/api/products/chair/summary"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Ghế"))
+            .andExpect(jsonPath("$.primaryImage.src").value("/image.jpg"))
+            .andExpect(jsonPath("$.images").doesNotExist()).andExpect(jsonPath("$.description").doesNotExist())
+            .andExpect(jsonPath("$.specifications").doesNotExist());
+        mvc.perform(get("/api/products/chair/images"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].src").value("/image.jpg"));
+        mvc.perform(get("/api/products/chair/details"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.description").value("Mô tả"))
+            .andExpect(jsonPath("$.lengthCm").value(55.25)).andExpect(jsonPath("$.material").value("Gỗ"))
+            .andExpect(jsonPath("$.images").doesNotExist());
+        verify(catalog).getProductSummary("chair");
+        verify(catalog).getProductImages("chair");
+        verify(catalog).getProductDetails("chair");
+        verifyNoMoreInteractions(catalog);
+    }
+
+    @Test
+    void relatedProductsUseOneBoundedEndpointWithPreviewFields() throws Exception {
+        when(catalog.getRelatedProducts("chair", 8)).thenReturn(Optional.of(List.of(
+            new ProductPreview(UUID.randomUUID(), "lamp", "Đèn", 100000, List.of()))));
+        when(catalog.getRelatedProducts("chair", 2)).thenReturn(Optional.of(List.of()));
+        mvc.perform(get("/api/products/chair/related"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].slug").value("lamp"))
+            .andExpect(jsonPath("$[0].images").isArray())
+            .andExpect(jsonPath("$[0].specifications").doesNotExist())
+            .andExpect(jsonPath("$[0].description").doesNotExist());
+        mvc.perform(get("/api/products/chair/related?size=2"))
+            .andExpect(status().isOk()).andExpect(content().json("[]"));
+        verify(catalog).getRelatedProducts("chair", 8);
+        verify(catalog).getRelatedProducts("chair", 2);
+        verifyNoMoreInteractions(catalog);
+    }
+
+    @Test
+    void invalidProductSectionParametersNeverReachDatabase() throws Exception {
+        for (String size : List.of("0", "-1", "9", "abc")) {
+            mvc.perform(get("/api/products/chair/related").param("size", size)).andExpect(status().isBadRequest());
+        }
+        for (String section : List.of("summary", "images", "details", "related")) {
+            mvc.perform(get("/api/products/" + "a".repeat(161) + "/" + section)).andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(catalog);
+    }
+
+    @Test
+    void missingProductSectionsReturn404AndOptionalFailuresDoNotBlockSummary() throws Exception {
+        when(catalog.getProductSummary("missing")).thenReturn(Optional.empty());
+        when(catalog.getProductImages("missing")).thenReturn(Optional.empty());
+        when(catalog.getProductDetails("missing")).thenReturn(Optional.empty());
+        when(catalog.getRelatedProducts("missing", 8)).thenReturn(Optional.empty());
+        for (String section : List.of("summary", "images", "details", "related")) {
+            mvc.perform(get("/api/products/missing/" + section)).andExpect(status().isNotFound());
+        }
+        when(catalog.getProductDetails("chair")).thenThrow(new DataAccessResourceFailureException("private-db-details"));
+        when(catalog.getProductSummary("chair")).thenReturn(Optional.of(
+            new ProductSummary(UUID.randomUUID(), "chair", "Ghế", UUID.randomUUID(), 0, "", null)));
+        mvc.perform(get("/api/products/chair/details")).andExpect(status().isServiceUnavailable());
+        mvc.perform(get("/api/products/chair/summary")).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Ghế"));
+    }
+
+    @Test
     void corsAllowsConfiguredFrontendAndRejectsOtherOrigins() throws Exception {
         mvc.perform(options("/api/products").header("Origin", "http://localhost:5173")
                 .header("Access-Control-Request-Method", "GET"))
