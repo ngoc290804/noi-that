@@ -187,16 +187,19 @@
   .reference-label { font-size: 11px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
   .detail-intro { font-size: 17px; margin-top: 26px; line-height: 1.65; }
   .detail-description { color: var(--muted); font-size: 14px; line-height: 1.9; margin-top: 12px; }
-  .product-accordions { margin-top: 28px; border-top: 1px solid #bdbdb3; }
-  .product-accordions details { border-bottom: 1px solid #bdbdb3; }
-  .product-accordions summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 0; font-size: 15px; }
+  .detail-description-collapsed { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .detail-description-toggle { color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+  .product-accordions { margin-top: 24px; border-top: 1px solid var(--border); }
+  .product-accordions details { border-bottom: 1px solid var(--border); }
+  .product-accordions summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 0; font-size: 14px; }
   .product-accordions summary::-webkit-details-marker { display: none; }
   .product-accordions details[open] summary svg { transform: rotate(180deg); }
-  .product-accordions dl { padding: 0 0 20px; font-size: 13px; }
-  .product-accordions dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
+  .product-accordions dl { padding: 0 0 16px; font-size: 13px; }
+  .product-accordions dl > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 20px; padding: 7px 0; }
   .product-accordions dt { color: #42483e; }
-  .product-accordions dd { color: var(--muted); text-align: right; }
-  .product-accordions details > p { color: var(--muted); font-size: 13px; line-height: 1.8; padding-bottom: 20px; }
+  .product-accordions dd { color: var(--muted); overflow-wrap: anywhere; }
+  .product-accordions details > p, .product-accordions details > div > p { color: var(--muted); font-size: 13px; line-height: 1.8; padding-bottom: 20px; }
+  .product-accordions .product-reference-note { font-size: 12px; }
   .related-products { padding-top: 64px; }
   .related-products-action { display: flex; justify-content: center; margin-top: 32px; }
 
@@ -233,7 +236,7 @@
   }
   @media (max-width: 1023px) {
     .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-    .related-products .product-card:nth-child(n+7) { display: none; }
+    .related-products .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .hero h1 { font-size: 36px; }
     .hero-title-placeholder { font-size: 36px; }
     .hero-description { font-size: 14px; }
@@ -246,7 +249,7 @@
     .gallery-stage > img, .gallery-stage > .image-fallback { aspect-ratio: 4/3; }
     .product-info { max-width: 680px; width: 100%; }
     .product-info h1 { font-size: 36px; }
-    .product-accordions dl { max-width: 480px; }
+    .product-accordions dl > div { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; }
     .header-inner { grid-template-columns: auto 44px minmax(0, 1fr); grid-template-areas: "brand menu search"; height: 64px; gap: 16px; }
     .desktop-nav { display: none; }
     .mobile-menu-toggle { grid-area: menu; display: inline-flex; justify-self: end; }
@@ -273,7 +276,6 @@
     .hero-description { margin-top: 16px; max-width: 410px; font-size: 14px; }
     .hero .button { margin-top: 22px; }
     .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; }
-    .related-products .product-card:nth-child(n+5) { display: none; }
     .section { padding-block: 36px; }
     h2 { font-size: 24px; }
     .section-header { margin-bottom: 22px; gap: 16px; }
@@ -358,7 +360,7 @@
     .gallery-thumbnail { flex-basis: 76px; }
     .gallery-thumbnails { gap: 8px; }
     .product-accordions summary { font-size: 14px; }
-    .product-accordions dl { font-size: 12px; }
+    .product-accordions dl, .product-accordions details > p, .product-accordions details > div > p { font-size: 12px; }
     .related-products { padding-top: 40px; }
     .footer-top { gap: 32px 20px; }
   }

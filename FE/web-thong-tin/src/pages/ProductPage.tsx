@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useCatalogResource } from '../app/useCatalogResource';
 import { CatalogStatus } from '../components/CatalogStatus';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -38,9 +38,18 @@ function ProductDetails({ product, images, details }: {
   details: SectionResource<ProductDetailsData>;
 }) {
   usePageMeta(`${product.name} — Luma`, product.shortDescription);
+  const descriptionId = useId();
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const { state } = useLocation();
   const candidate: unknown = state?.catalogUrl;
   const backTo = typeof candidate === 'string' && (candidate === '/san-pham' || candidate.startsWith('/san-pham?')) ? candidate : '/san-pham';
+  const careLabel = 'Hướng dẫn bảo quản';
+  const referenceLabel = 'Thông tin tham khảo';
+  const careInstructions = details.data?.specifications.find((item) => item.label === careLabel)?.value;
+  const referenceNote = details.data?.specifications.find((item) => item.label === referenceLabel)?.value;
+  const specifications = details.data ? getSpecifications(details.data).filter((item) => item.label !== careLabel && item.label !== referenceLabel) : [];
+  const description = details.data?.description ?? '';
+  const canExpandDescription = description.length > 220;
 
   return (
     <div className="container product-page">
@@ -54,10 +63,31 @@ function ProductDetails({ product, images, details }: {
           <h1>{product.name}</h1>
           <div className="detail-price"><span>{formatPrice(product.priceVnd)}</span><span className="reference-label">Giá tham khảo</span></div>
           <p className="detail-intro">{product.shortDescription}</p>
-          {details.data ? <p className="detail-description">{details.data.description}</p> : null}
+          {details.data ? <>
+            <p id={descriptionId} className={`detail-description${canExpandDescription && !descriptionExpanded ? ' detail-description-collapsed' : ''}`}>{description}</p>
+            {canExpandDescription ? <button type="button" className="text-link detail-description-toggle" aria-expanded={descriptionExpanded} aria-controls={descriptionId} onClick={() => setDescriptionExpanded((expanded) => !expanded)}>{descriptionExpanded ? 'Thu gọn' : 'Xem thêm'}</button> : null}
+          </> : null}
           <div className="product-accordions">
-            <details open><summary>Thông tin sản phẩm <Icon name="chevron-down" /></summary><div aria-busy={!details.data && !details.error}>{details.data ? <dl>{getSpecifications(details.data).map((specification) => <div key={specification.label}><dt>{specification.label}</dt><dd>{specification.value ? `${specification.value}${specification.unit ? ` ${specification.unit}` : ''}` : 'Thông tin đang cập nhật'}</dd></div>)}</dl> : details.error ? <SectionError message="Chưa thể tải thông tin sản phẩm." retry={details.retry} /> : <p role="status">Đang tải thông tin sản phẩm…</p>}</div></details>
-            <details><summary>Hướng dẫn bảo quản <Icon name="chevron-down" /></summary><p>Thông tin hướng dẫn bảo quản của sản phẩm đang được cập nhật.</p></details>
+            <details>
+              <summary>Thông tin sản phẩm <Icon name="chevron-down" /></summary>
+              <div aria-busy={!details.data && !details.error}>
+                {details.data ? <>
+                  <dl>{specifications.map((specification) => (
+                    <div key={specification.label}>
+                      <dt>{specification.label}</dt>
+                      <dd>{specification.value ? `${specification.value}${specification.unit ? ` ${specification.unit}` : ''}` : 'Thông tin đang cập nhật'}</dd>
+                    </div>
+                  ))}</dl>
+                  {referenceNote ? <p className="product-reference-note">{referenceLabel}: {referenceNote}</p> : null}
+                </> : details.error ? <SectionError message="Chưa thể tải thông tin sản phẩm." retry={details.retry} /> : <p role="status">Đang tải thông tin sản phẩm…</p>}
+              </div>
+            </details>
+            <details>
+              <summary>{careLabel} <Icon name="chevron-down" /></summary>
+              <div aria-busy={!details.data && !details.error}>
+                {details.data ? <p>{careInstructions || 'Thông tin hướng dẫn bảo quản của sản phẩm đang được cập nhật.'}</p> : details.error ? <SectionError message="Chưa thể tải hướng dẫn bảo quản." retry={details.retry} /> : <p role="status">Đang tải hướng dẫn bảo quản…</p>}
+              </div>
+            </details>
           </div>
         </div>
       </div>

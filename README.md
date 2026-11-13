@@ -1,6 +1,6 @@
 # Luma — Website thông tin nội thất
 
-Web giới thiệu nội thất/gia dụng bằng **React + TypeScript**, dùng Node.js và Vite để phát triển/build. Đã có trang chủ, danh sách, chi tiết bốn sản phẩm, tìm kiếm không dấu, lọc danh mục, sắp xếp và giao diện responsive.
+Web giới thiệu nội thất/gia dụng bằng **React + TypeScript**, dùng Node.js và Vite để phát triển/build. Đã có trang chủ, danh sách phân trang, chi tiết sản phẩm, tìm kiếm không dấu, lọc danh mục, sắp xếp và giao diện responsive; FE đọc dữ liệu trực tiếp từ API. Backend **Java 17 + Spring Boot + Neon PostgreSQL** nằm trong `BE/`.
 
 ## Chạy dự án
 
@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-Mở địa chỉ được Vite in ra, mặc định `http://127.0.0.1:5173/`.
+Khởi động BE theo [hướng dẫn BE](BE/README.md) trước khi sử dụng FE. Vite chuyển tiếp `/api` tới `http://127.0.0.1:8080`; có thể thay bằng `API_PROXY_TARGET` trong `FE/web-thong-tin/.env.local` (xem `.env.example`). Mở địa chỉ được Vite in ra, mặc định `http://127.0.0.1:5173/`.
 
 ```bash
 npm test
@@ -26,13 +26,14 @@ npm run preview
 
 ```text
 FE/web-thong-tin/       Ứng dụng đang triển khai
-BE/                    Để sẵn cho Spring Boot khi cần, chưa khởi tạo
+BE/                    Spring Boot API công khai + Neon PostgreSQL + Flyway
 Art/                   Ảnh gốc, mockup và prototype, giữ nguyên
 docs/                  Hai kế hoạch riêng cho web quản lý và web thông tin
 ```
 
 - [Hướng dẫn FE](FE/web-thong-tin/README.md): cách sửa nội dung, ảnh và cấu trúc ứng dụng.
+- [Hướng dẫn BE](BE/README.md): cấu hình `.env`, chạy API, migration, kiểm thử DB, upload Cloudinary và đồng bộ catalog từ source.
 - [Kế hoạch web thông tin](docs/02-KE-HOACH-WEB-THONG-TIN-HANG.md).
 - [Kế hoạch web quản lý](docs/01-KE-HOACH-WEB-QUAN-LY.md): vẫn hoãn triển khai.
 
-Dữ liệu hiện là mẫu từ bộ thiết kế; giá chỉ để tham khảo. Các thông số chưa được cung cấp ghi “Thông tin đang cập nhật”. Chưa có quản trị, API, cơ sở dữ liệu, giỏ hàng, đặt hàng hoặc thanh toán. Bản mẫu có `noindex, nofollow` để tránh giới thiệu dữ liệu thử như thông tin kinh doanh chính thức; chỉ đổi sau khi xác nhận nội dung và cấu hình phát hành.
+Dữ liệu hiện là mẫu từ bộ thiết kế; giá chỉ để tham khảo. Các thông số chưa được cung cấp ghi “Thông tin đang cập nhật”. BE cung cấp `/api/products`, `/api/products/{slug}`, `/api/categories`, `/api/home` và `/actuator/health`; Flyway tạo schema riêng `luma` cùng dữ liệu mẫu khớp FE. API quản lý ảnh `/api/admin/media/images` hỗ trợ upload Cloudinary và gắn ảnh vào sản phẩm, yêu cầu token riêng. FE đã gọi API cho trang chủ, danh mục, danh sách, chi tiết và sản phẩm tương tự; hiển thị ảnh Cloudinary từ DB, có tải/lỗi/thử lại và phân biệt lỗi kết nối với 404. `src/data/catalog.ts` chỉ còn là fixture/nguồn cho script đồng bộ catalog, không được dùng khi khách xem web. Chưa có giao diện quản trị, CRUD sản phẩm, giỏ hàng, đặt hàng hoặc thanh toán. Bản mẫu có `noindex, nofollow` để tránh giới thiệu dữ liệu thử như thông tin kinh doanh chính thức; chỉ đổi sau khi xác nhận nội dung và cấu hình phát hành.

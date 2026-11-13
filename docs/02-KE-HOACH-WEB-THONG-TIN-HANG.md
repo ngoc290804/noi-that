@@ -1,6 +1,6 @@
 # Kế hoạch web thông tin hàng — Luma
 
-Ngày cập nhật: 12/11/2026. Trạng thái: đã triển khai FE React + TypeScript trong `FE/web-thong-tin/`; BE chỉ làm khi cần dữ liệu động.
+Ngày cập nhật: 12/11/2026. Trạng thái: đã triển khai FE React + TypeScript trong `FE/web-thong-tin/` và BE sơ bộ Spring Boot + Neon PostgreSQL trong `BE/`. FE đã nối API công khai và ảnh Cloudinary, có phân trang, trạng thái tải/lỗi/thử lại.
 
 Tài liệu liên quan: [Kế hoạch web quản lý](01-KE-HOACH-WEB-QUAN-LY.md).
 
@@ -17,20 +17,20 @@ Chưa triển khai giỏ hàng, đặt hàng online, checkout (kể cả mô ph�
 ### 1.2. Công nghệ
 
 - **FE: React + TypeScript**; **Node.js** cho môi trường phát triển, dependency và build.
-- **BE khi cần: Java + Spring Boot**. Chưa cần BE để chạy bản FE dùng dữ liệu mẫu.
-- Node.js không đảm nhiệm một backend riêng. Chưa chọn cơ sở dữ liệu hoặc chốt phiên bản công nghệ; kiểm tra tương thích khi khởi tạo ứng dụng.
+- **BE: Java 17 + Spring Boot 3.5.16**, Maven, Spring JDBC, Flyway và Neon PostgreSQL. Chưa cần BE để chạy bản FE dùng dữ liệu mẫu.
+- Node.js không đảm nhiệm một backend riêng. Cấu hình DB nằm trong biến môi trường của BE, không đặt trong mã FE.
 
 ### 1.3. Quy hoạch thư mục
 
-Đã có ứng dụng `FE/web-thong-tin/` và hướng dẫn chạy ở `README.md`. Web quản lý chưa khởi tạo; `BE/` hiện có placeholder và README, chưa có Spring Boot. Cấu trúc dưới đây thể hiện cả phần hiện có và phần dự kiến:
+Đã có ứng dụng `FE/web-thong-tin/`, backend `BE/` và hướng dẫn chạy ở README tương ứng. Web quản lý chưa khởi tạo. Cấu trúc dưới đây thể hiện cả phần hiện có và phần dự kiến:
 
 ```text
 Noi-that/
 ├── FE/
 │   ├── web-thong-tin/                React TS công khai — đã triển khai
 │   └── web-quan-ly/                  React TS quản lý — dự kiến, chưa tạo
-├── BE/                              Một backend Spring Boot khi cần
-│   └── src/                         API công khai/quản lý tách quyền — dự kiến, chưa tạo
+├── BE/                              Spring Boot + Neon PostgreSQL — đã triển khai sơ bộ
+│   └── src/                         API công khai, migration và kiểm thử
 ├── Art/                             Ảnh và prototype gốc, giữ làm tham chiếu
 └── docs/
     ├── 01-KE-HOACH-WEB-QUAN-LY.md
@@ -85,7 +85,7 @@ Dùng Node.js để chạy/build FE. Dữ liệu ban đầu nằm trong ứng d�
 - **Catalog sai dữ liệu:** card ghế đầu thiếu tên/giá ngay dưới ảnh; một ảnh cận sofa mang tên Ghế ăn Nordic; ảnh tủ/bình mang tên Bộ cốc Gốm Mộc và giá `4500.000đ`, khác `450.000đ` ở trang chủ. Dùng dữ liệu chung để không sao chép các lỗi này.
 - **Card chưa đồng đều:** chọn grid đều với cùng tỷ lệ ảnh, vị trí tên và giá; không dựng bố cục masonry từ các chỗ lệch của mockup.
 - **Hero chưa có đúng ảnh nguồn:** mockup là tủ/bình/đèn, còn `phong-khach-nordic.jpg` có sofa làm trọng tâm. Dùng ảnh phòng khách tạm và ghi nhận khác biệt; muốn khớp cần ảnh hero riêng, không dùng cả mockup chứa chữ làm banner.
-- **Gallery đã bổ sung ảnh:** Ghế ăn Nordic có ảnh toàn cảnh và ảnh cận `Ghe/ghe-an-nordic-gan.png`; đã gắn cả hai vào gallery. Ba món còn lại mỗi món một ảnh, không nhân bản ảnh để tạo thumbnail giả.
+- **Gallery đã bổ sung ảnh:** Ghế ăn Nordic có ảnh toàn cảnh và ảnh cận `Ghe/Ghe-an-Nordic/ghe-an-nordic-gan.png`; đã gắn cả hai vào gallery. Ba món còn lại mỗi món một ảnh, không nhân bản ảnh để tạo thumbnail giả.
 - **Mô tả và nhãn:** sửa câu tiếng Việt lỗi; Việt hóa `Wood finish`, `Oak`, `Walnut`. Không đồng nhất `Walnut` với “Sồi hun khói”. Chỉ hiển thị chất liệu/màu đã có dữ liệu xác nhận.
 - **Mobile:** giữ grid hai cột ở chiều rộng điện thoại thông thường; tăng vùng chạm, cho tên dài xuống dòng và giữ giá rõ.
 - **Guide/CSS khác nhau:** chuẩn hóa typography/radius theo mục 2.4; card phẳng, ảnh bo nhẹ, không trộn nhiều kiểu bóng và bo góc trong một grid.
@@ -105,14 +105,14 @@ Khi dựng FE, giữ prototype và ảnh gốc trong `Art/` để đối chiếu
 
 | ID đề xuất | Tên | Giá mẫu VND | Danh mục | Ảnh trong `Art/Prod/` |
 | --- | --- | --- | --- | --- |
-| `p-binh-gom-luma` | Bình gốm Luma | 620000 | Gốm sứ | `Gom-su/binh-gom-luma.jpg` (1 ảnh) |
-| `p-ghe-an-nordic` | Ghế ăn Nordic | 2900000 | Ghế & Bàn | `Ghe/ghe-an-nordic.jpg`, `Ghe/ghe-an-nordic-gan.png` (2 ảnh) |
-| `p-den-ban-horizon` | Đèn bàn Horizon | 1250000 | Đèn | `Den/den-ban-horizon.jpg` (1 ảnh) |
-| `p-bo-coc-gom-moc` | Bộ cốc Gốm Mộc | 450000 | Gốm sứ | `Gom-su/bo-coc-gom-moc.jpg` (1 ảnh) |
+| `p-binh-gom-luma` | Bình gốm Luma | 620000 | Gốm sứ | `Gom-su/Binh-gom-Luma/binh-gom-luma.jpg` (1 ảnh) |
+| `p-ghe-an-nordic` | Ghế ăn Nordic | 2900000 | Ghế & Bàn | `Ghe/Ghe-an-Nordic/ghe-an-nordic.jpg`, `Ghe/Ghe-an-Nordic/ghe-an-nordic-gan.png` (2 ảnh) |
+| `p-den-ban-horizon` | Đèn bàn Horizon | 1250000 | Đèn | `Den/Den-ban-Horizon/den-ban-horizon.jpg` (1 ảnh) |
+| `p-bo-coc-gom-moc` | Bộ cốc Gốm Mộc | 450000 | Gốm sứ | `Gom-su/Bo-coc-Gom-Moc/bo-coc-gom-moc.jpg` (1 ảnh) |
 
 Giá là dữ liệu mẫu từ ảnh trang chủ/HTML, chưa phải bảng giá kinh doanh đã duyệt. Số tiền lưu dạng số nguyên VND và định dạng thống nhất như `2.900.000đ` khi hiển thị.
 
-Hai ảnh trong `Art/Prod/Khong-gian/` là `phong-khach-nordic.jpg` và `phong-an-japandi.jpg`, dùng cho phần cảm hứng không gian trên trang chủ. Không đưa sofa/bàn ăn thành sản phẩm có thể xem riêng chỉ vì xuất hiện trong ảnh khi chưa có dữ liệu và ảnh sản phẩm phù hợp.
+Hai ảnh không gian là `Art/Prod/Khong-gian/Phong-khach-Nordic/phong-khach-nordic.jpg` và `Art/Prod/Khong-gian/Phong-an-Japandi/phong-an-japandi.jpg`, dùng cho phần cảm hứng không gian trên trang chủ. Không đưa sofa/bàn ăn thành sản phẩm có thể xem riêng chỉ vì xuất hiện trong ảnh khi chưa có dữ liệu và ảnh sản phẩm phù hợp.
 
 Sáu ảnh JPG gốc có kích thước 1200 × 896 px; ảnh PNG cận cảnh ghế có kích thước 1024 × 764 px. FE dùng bản WebP giữ kích thước nguồn và bản nhỏ rộng 600 px, khai báo kích thước thực trong dữ liệu/srcset; ảnh gốc được giữ nguyên.
 
@@ -120,11 +120,11 @@ Sáu ảnh JPG gốc có kích thước 1200 × 896 px; ảnh PNG cận cảnh g
 
 | Thực thể | Trường dự kiến |
 | --- | --- |
-| Product | id, slug, name, categoryId, priceVnd, shortDescription, description, images, specifications, displayOrder, isFeatured |
+| Product | id (UUID), slug, name, categoryId (UUID), priceVnd, lengthCm, widthCm, heightCm, material, color, shortDescription, description, images, specifications, displayOrder, isFeatured |
 | ProductImage | src, alt, width, height; điểm crop nếu cần |
 | Specification | label, value, unit nếu có |
-| Category | id, slug, name, displayOrder |
-| HomeContent | heroTitle, heroDescription, heroImage, featuredProductIds, các khối ảnh không gian |
+| Category | id (UUID), slug, name, displayOrder |
+| HomeContent | id (UUID trong DB), code, heroTitle, heroDescription, heroImage, featuredProductIds (UUID), các khối ảnh không gian |
 | StoreInfo | tên thương hiệu và thông tin liên hệ đã được cung cấp |
 
 Chưa cần mô hình giỏ, đơn hàng, thanh toán, tồn kho hoặc tài khoản. Chưa buộc mỗi sản phẩm có SKU/biến thể bán hàng. Chất liệu, kích thước và màu dùng như thông tin mô tả khi có; phần chưa có ghi “Thông tin đang cập nhật”, không tự đoán từ hình.
@@ -174,8 +174,8 @@ Thông tin giới thiệu/liên hệ ban đầu có thể là section trong tran
 
 #### 2.5.1. Khung website và trang chủ
 
-- Header: logo Luma về trang chủ; menu Trang chủ, Sản phẩm, Giới thiệu. Có tìm kiếm đơn giản đưa về catalog với query.
-- Mobile: nút menu trái, logo giữa, nút tìm kiếm phải; không hiện icon giỏ/yêu thích.
+- Header: logo Luma ở góc trái dẫn về trang chủ; menu Trang chủ, Sản phẩm, Về Luma ở giữa. Ô tìm kiếm có viền, rộng tối đa 360 px, đặt bên phải và đưa về catalog với query.
+- Mobile: logo trái, nút menu phải; ô tìm kiếm có viền trên hàng riêng, rộng theo màn hình. Không hiện icon giỏ/yêu thích.
 - Trang chủ: hero gọn → bốn sản phẩm nổi bật → hai ảnh cảm hứng không gian → giới thiệu ngắn/footer.
 - Hero giữ headline và CTA “Xem sản phẩm” dẫn `/san-pham`; điều chỉnh crop theo ảnh thực tế.
 - “Xem tất cả” dẫn catalog. Ảnh không gian có thể dẫn catalog với danh mục phù hợp, không cần trang bộ sưu tập riêng.
@@ -204,7 +204,7 @@ Thông tin giới thiệu/liên hệ ban đầu có thể là section trong tran
 - Thuộc tính màu/chất liệu hiện dưới dạng thông tin đọc; chưa dựng chọn phiên bản mua hàng, số lượng, tồn kho hoặc thanh mua cố định.
 - Dùng accordion cho nội dung dài như thông số/hướng dẫn bảo quản khi có dữ liệu. Không tạo các cam kết giao hàng/bảo hành chưa xác nhận.
 - CTA “Quay lại danh sách” đưa về catalog, ưu tiên giữ query trước đó; nếu truy cập trực tiếp thì về catalog mặc định.
-- Sản phẩm liên quan dùng lại card, loại trừ món hiện tại; có thể chọn theo cùng danh mục, không cố đủ bốn card.
+- Khối “Sản phẩm tương tự” thẳng lề với phần chi tiết và dùng chung kích thước card: desktop bốn cột (tối đa tám món), tablet ba cột (tối đa sáu món), mobile hai cột (tối đa bốn món), giới hạn hai hàng. Ưu tiên cùng danh mục, bổ sung các món khác theo thứ tự nổi bật nếu cần; loại trừ món đang xem và không nhân bản. Nút “Xem sản phẩm khác” mở trang `/san-pham`.
 - Slug sai hiển thị trang không tìm thấy, có link về catalog; mở trực tiếp URL hợp lệ phải xem được đúng món.
 
 #### 2.5.4. Thành phần đơn giản và các trạng thái
@@ -213,7 +213,7 @@ Thông tin giới thiệu/liên hệ ban đầu có thể là section trong tran
 - Ảnh thiếu/hỏng có nền dự phòng và giữ tỷ lệ để không làm lệch grid.
 - Dữ liệu thông số chưa đủ dùng nhãn cập nhật; không làm trang chi tiết thành khối trống khó hiểu.
 - Trang 404 có lời giải thích, link về trang chủ và catalog.
-- Không tạo loading giả khi dữ liệu cục bộ đọc ngay; chỉ cần thiết kế trạng thái tải cho khi nối API.
+- Hiển thị trạng thái tải thực tế theo request API, phân biệt lỗi với kết quả rỗng và cho phép thử lại.
 - Các link/button đang hiển thị đều có hành vi hữu ích; không dùng `#` cho chức năng chưa làm.
 
 ### 2.6. Responsive và khả năng sử dụng
@@ -244,7 +244,7 @@ Các bước FE-0 đến FE-5 đã được thực hiện cho bản dữ liệu 
 | FE-4 | Trang chủ gọn, giới thiệu, ảnh không gian | Hoàn thiện phần cơ bản và điều hướng | 1 ngày |
 | FE-5 | Kiểm tra trình duyệt, responsive, lỗi/ảnh/font, build và bản xem thử | Đạt checklist dưới đây; ghi nhận phần thiếu | 1–2 ngày |
 
-Tổng sơ bộ **7–10 ngày công**. Đây là ước lượng ban đầu, không phải số ngày công thực tế đã đo. Bản FE mẫu hiện đã được triển khai và kiểm tra; BE/quản lý vẫn chưa triển khai.
+Tổng sơ bộ **7–10 ngày công**. Đây là ước lượng ban đầu, không phải số ngày công thực tế đã đo. Bản FE mẫu hiện đã được triển khai và kiểm tra; BE công khai đã khởi tạo riêng, quản lý vẫn chưa triển khai.
 
 Thứ tự ưu tiên: **khung chung → danh sách → chi tiết → trang chủ gọn → kiểm tra và bàn giao**. Không chen giỏ hàng hoặc checkout vào giữa các bước này.
 
@@ -252,7 +252,7 @@ Thứ tự ưu tiên: **khung chung → danh sách → chi tiết → trang ch�
 
 #### 2.8.1. Phạm vi và hành vi
 
-- [x] FE dùng React + TypeScript, chạy/build bằng môi trường Node.js; chạy được mà không cần BE.
+- [x] FE dùng React + TypeScript, chạy/build bằng môi trường Node.js; dữ liệu runtime được tải từ BE.
 - [x] Có trang chủ, danh sách, chi tiết từng món và 404; mở trực tiếp URL hoạt động.
 - [x] Card ảnh/tên/giá cùng đọc một nguồn; không còn sai tên/giá như ảnh catalog.
 - [x] Tìm kiếm, lọc danh mục và sort đúng; query được giữ khi refresh/back.
@@ -270,7 +270,7 @@ Thứ tự ưu tiên: **khung chung → danh sách → chi tiết → trang ch�
 - [ ] Có empty state, 404, thông số chưa có và dự phòng ảnh lỗi.
 - [ ] Không có lỗi console từ app, link hỏng hoặc layout nhảy nhiều khi tải ảnh.
 - [x] Build thành công và kiểm tra trên trình duyệt với luồng trang chủ → catalog → chi tiết → quay lại.
-- [x] Bàn giao cách chạy/build, vị trí dữ liệu mẫu, phần còn thiếu và trạng thái BE chưa triển khai.
+- [x] Bàn giao cách chạy/build, vị trí dữ liệu mẫu và phần còn thiếu; BE sơ bộ đã có hướng dẫn riêng trong `BE/README.md`.
 
 ### 2.9. Nội dung còn thiếu
 
@@ -281,53 +281,66 @@ Thứ tự ưu tiên: **khung chung → danh sách → chi tiết → trang ch�
 | Kích thước, vật liệu, bảo quản | Chỉ công khai dữ liệu được cung cấp; phần thiếu ghi đang cập nhật |
 | Giá chính thức | Dùng giá mẫu để dựng UI, ghi rõ là tham khảo cho đến khi xác nhận |
 | Liên hệ, địa chỉ, câu chuyện thương hiệu | Bổ sung khi có nội dung; chưa tạo dữ liệu giả |
-| API và lưu trữ | FE dùng dữ liệu mẫu; thư mục BE giữ sẵn cho Spring Boot nếu cần |
+| API và lưu trữ | FE đã nối API Spring Boot + Neon PostgreSQL, hiển thị ảnh Cloudinary và có tải/lỗi/thử lại |
 
-## 3. BE — Spring Boot khi cần
+## 3. BE — Spring Boot + Neon PostgreSQL
 
 ### 3.1. Điều kiện và phạm vi triển khai
 
-Chỉ bắt đầu BE khi cần cập nhật sản phẩm độc lập với bản build FE, cần nguồn dữ liệu động hoặc kết nối web quản lý. BE chưa phải hạng mục thực hiện ngay; thư mục `BE/` đang để sẵn.
+Đã khởi tạo BE sơ bộ theo yêu cầu kết nối Neon. Hướng dẫn cấu hình, chạy và kiểm thử nằm tại [BE/README.md](../BE/README.md).
 
-BE phục vụ website thông tin chỉ cung cấp dữ liệu công khai: sản phẩm, danh mục, ảnh và nội dung trang chủ. Không có API giỏ, tạo đơn, thanh toán hay giữ hàng trong phạm vi hiện tại.
+API công khai phục vụ website thông tin gồm sản phẩm, danh mục, ảnh và nội dung trang chủ. Có thêm API quản lý ảnh Cloudinary được bảo vệ bằng token riêng. Không có API giỏ, tạo đơn, thanh toán hay giữ hàng trong phạm vi hiện tại.
 
-### 3.2. Tổ chức backend dự kiến
+### 3.2. Tổ chức backend
 
-Một ứng dụng Java + Spring Boot trong `BE/`, chia theo miền sản phẩm, danh mục, media, nội dung và các lớp controller/service/repository/model/DTO phù hợp. API công khai và quản lý có controller/DTO/quyền riêng, dùng chung service nghiệp vụ và nguồn dữ liệu khi thích hợp.
+Một ứng dụng Java 17 + Spring Boot 3.5.16 trong `BE/`, dùng Maven, Spring JDBC, validation, Actuator và Flyway. Miền catalog và media có controller/service/repository/DTO phù hợp; cấu hình CORS và xử lý lỗi được tách riêng. API quản lý ảnh dùng bearer token riêng; chưa có đăng nhập quản trị hoặc CRUD sản phẩm.
 
-Chưa chốt Maven/Gradle, hệ quản trị cơ sở dữ liệu hoặc hạ tầng. Lựa chọn khi bắt đầu BE; không thêm các thành phần này chỉ để dựng thư mục.
+Neon PostgreSQL dùng endpoint pooler và SSL/channel binding; thông tin đăng nhập nằm trong `.env` bị bỏ qua bởi Git. Flyway tạo schema riêng `luma`, không chỉnh sửa bảng ngoài schema này, có migration và dữ liệu mẫu khớp FE. Migration V3 chuyển khóa chính/ngoại nghiệp vụ và ID sản phẩm trong JSON trang chủ sang UUID, giữ nguyên slug/nội dung. `home_content.code = 'home'` dùng để chọn trang chủ sau khi ID thành UUID. Đã đồng bộ catalog hiện tại từ source lên Neon và upload 7 ảnh sản phẩm/không gian lên Cloudinary; DB lưu URL/thumbnail/alt/kích thước/publicId. File ảnh trong FE được giữ nguyên.
 
-### 3.3. API chỉ đọc dự kiến
+Sản phẩm có thêm `length_cm`, `width_cm`, `height_cm` kiểu `numeric(10,2)` theo cm, `material` và `color`. API trả các trường `lengthCm`, `widthCm`, `heightCm`, `material`, `color`. Chưa có thông tin thì lưu `NULL`; kích thước khi nhập phải hữu hạn, lớn hơn 0. ID trong API là chuỗi UUID; bộ lọc danh mục chấp nhận cả UUID và slug.
+
+### 3.3. API chỉ đọc đã triển khai
 
 | API | Mục đích | Quy tắc |
 | --- | --- | --- |
 | `GET /api/products` | Danh sách theo `q`, `category`, `sort` | Chỉ sản phẩm công khai; cùng quy tắc lọc/sort với FE |
 | `GET /api/products/{slug}` | Chi tiết sản phẩm | Không có hoặc chưa công khai trả lỗi không tìm thấy |
 | `GET /api/categories` | Danh mục hiển thị | Tên/slug/thứ tự thống nhất |
-| `GET /api/home` | Nội dung trang chủ nếu cần dữ liệu động | Chỉ bản đã công khai |
+| `GET /api/home` | Nội dung trang chủ động | Chỉ bản đã công khai; featured IDs từ sản phẩm công khai |
+| `GET /actuator/health` | Kiểm tra ứng dụng và DB | Không trả thông tin đăng nhập hoặc chi tiết DB |
 
-Đây là hợp đồng dự kiến, chưa phải endpoint đã tồn tại. Danh sách có `items` và `total`; phân trang bổ sung khi số sản phẩm cần đến. Query không hợp lệ được xử lý nhất quán, lỗi trả mã ổn định để FE hiển thị tiếng Việt.
+Danh sách có `items`, `total`, `page`, `size`; mặc định trang 0, 24 món, tối đa 100 món. Tìm kiếm không dấu gồm đ/Đ, lọc danh mục, sắp xếp giá và thứ tự hiển thị; sort không hợp lệ về mặc định. Tham số sai kiểu/vượt giới hạn trả 400, không tìm thấy trả 404, lỗi DB trả 503. Lỗi theo định dạng Problem Details, không lộ SQL hoặc credentials.
+
+API media riêng: `GET /api/admin/media/status` kiểm tra Cloudinary và `POST /api/admin/media/images` nhận multipart `file`, `alt`, tùy chọn `productId` UUID. Cả hai yêu cầu bearer token. Upload hỗ trợ JPEG/PNG/WebP tối đa 10 MiB; trả URL HTTPS và thumbnail, có thể thêm trực tiếp vào gallery sản phẩm mà không thay thế ảnh cũ. Key/secret/token nằm trong biến môi trường BE, không đưa vào FE công khai.
+
+Lệnh `python3 BE/scripts/sync-catalog.py --apply` đồng bộ dữ liệu từ `src/data/catalog.ts`: sao lưu DB, dùng lại/upload ảnh theo SHA-256, xác minh URL rồi upsert danh mục/sản phẩm/trang chủ trong một transaction. UUID được giữ theo slug; các thuộc tính vật lý chưa có trong source được giữ trên DB. Mặc định hoặc `--dry-run` chỉ đối chiếu. Backup và báo cáo nằm trong `BE/.local/catalog-sync/`, bị bỏ qua bởi Git.
+
+Ảnh của dự án được tổ chức trong Media Library bằng `asset_folder`: `luma/catalog` cho 7 ảnh nguồn, `luma/media` cho upload độc lập và `luma/products/{UUID}` cho ảnh gắn sản phẩm. Đã chuyển 7 ảnh về thư mục catalog, giữ nguyên asset ID/public ID/URL. Script đồng bộ cũng sửa vị trí ảnh khi dùng lại tài nguyên cũ.
 
 ### 3.4. Dữ liệu và kết nối FE
 
 - Dùng mô hình Product, ProductImage, Specification, Category, HomeContent và StoreInfo ở mục 2.3.2 làm căn cứ trao đổi dữ liệu.
 - Giá là số nguyên VND; ID ổn định, slug duy nhất. Không suy ra thuộc tính sản phẩm từ ảnh.
 - API công khai chỉ trả dữ liệu được công khai; không trả dữ liệu nháp, thông tin nhân sự hoặc trường nội bộ.
-- Trong FE, `listProducts(query)`, `getProduct(slug)`, `listCategories()` và `getHomeContent()` chuyển nguồn từ dữ liệu mẫu sang API; component giữ nguyên trách nhiệm hiển thị.
+- FE đã chuyển sang HTTP adapter cho danh sách, chi tiết, danh mục, nội dung trang chủ, nổi bật và tương tự. Có tải/lỗi/thử lại, timeout/hủy request, phân trang và URL UUID/slug; dữ liệu mẫu chỉ dùng làm fixture/nguồn cho script đồng bộ.
 - Cấu hình địa chỉ API theo môi trường; không đặt bí mật trong mã FE. Chốt chính sách truy cập giữa FE/BE khi triển khai thực tế.
 
-### 3.5. Nghiệm thu BE khi được triển khai
+### 3.5. Nghiệm thu BE
 
-- [ ] Các API chỉ trả dữ liệu công khai, có lỗi không tìm thấy rõ ràng.
-- [ ] Tìm/lọc/sort và định dạng dữ liệu thống nhất với bản FE dùng dữ liệu mẫu.
-- [ ] Mở URL sản phẩm trực tiếp, tải lỗi và thử lại được kiểm tra sau khi nối API.
+- [x] Các API chỉ trả dữ liệu công khai, có lỗi không tìm thấy rõ ràng.
+- [x] Tìm/lọc/sort và định dạng dữ liệu thống nhất với bản FE dùng dữ liệu mẫu.
+- [x] Đã kiểm tra URL trực tiếp của 4 sản phẩm, lỗi/thử lại và 404 sau khi nối API.
 - [ ] Thay dữ liệu mẫu bằng BE không phải viết lại card/trang chi tiết.
-- [ ] Không phát sinh API đặt hàng hoặc quản lý ngoài phạm vi đã đưa vào thực hiện.
+- [x] Không phát sinh API đặt hàng hoặc quản lý ngoài phạm vi đã đưa vào thực hiện.
+
+Đã qua 52 trường hợp kiểm thử controller, Cloudinary client/service và tích hợp trực tiếp trên Neon PostgreSQL, đóng gói JAR thành công. Bộ kiểm thử bao gồm UUID/khóa ngoại, lọc danh mục bằng UUID/slug, tìm kiếm nhiều khoảng trắng/tab/NBSP/BOM, số đo và ràng buộc kích thước, token/CORS, thư mục/định dạng/dung lượng ảnh, bù trừ khi lưu ảnh vào DB thất bại và giữ nguyên gallery. Đã đối chiếu dữ liệu trước/sau V3 để xác nhận giữ nguyên nội dung, giá, ảnh, thông số và quan hệ danh mục. Các thay đổi fixture trong test được rollback. Flyway được ghim ở 11.20.3 để hỗ trợ PostgreSQL 18.
+
+Kiểm thử tích hợp FE sau khi nối API: 15 test hợp đồng HTTP/query/thông số, 52 test BE gồm Neon và 22 kiểm tra trình duyệt đã qua. Playwright chạy với BE thật tại `127.0.0.1:8080`, FE tại `127.0.0.1:5173`; viewport 1440, 768, 390 và 320 px. Đã kiểm tra tìm kiếm không dấu, lọc slug/UUID, sắp xếp, URL/reload/quay lại, gallery, menu, anchor và không tràn ngang. Các ca 25 sản phẩm/phân trang, danh mục mới, thông số có dữ liệu, ảnh rỗng, lỗi 500/503 và request chậm dùng HTTP fixture trong trình duyệt, không chỉnh catalog DB. Không có lỗi runtime/console trong các luồng thật. Chưa kiểm tra Firefox/Safari hoặc hosting production.
 
 ## 4. Quan hệ với web quản lý và thứ tự thực hiện
 
-1. Đã làm FE web thông tin: khung chung → catalog → chi tiết → trang chủ gọn → kiểm tra/bàn giao, theo mục 2.7. Build/kiểm tra kiểu và 6 kịch bản dữ liệu đã qua; kiểm tra tương tác bằng trình duyệt IAB.
-2. Khi cần dữ liệu động, triển khai BE công khai rồi nối FE theo mục 3.
+1. Đã làm FE web thông tin: khung chung → catalog → chi tiết → trang chủ gọn → kiểm tra/bàn giao, theo mục 2.7. Build/kiểm tra kiểu và 15 kịch bản hợp đồng HTTP/query/thông số đã qua; kiểm tra tương tác với BE thật bằng Playwright.
+2. Đã khởi tạo BE công khai, kết nối Neon và chuyển adapter FE sang API theo mục 3.
 3. Web quản lý được triển khai riêng ở giai đoạn sau theo [tài liệu web quản lý](01-KE-HOACH-WEB-QUAN-LY.md); nội dung công khai từ quản lý trở thành nguồn cho API thông tin.
 4. Giỏ hàng/đặt hàng online/thanh toán tiếp tục để ngoài cả hai kế hoạch thực hiện hiện tại.
 

@@ -94,7 +94,8 @@ export function createCatalogApi(baseUrl = '/api', fetcher: typeof fetch = globa
   const getProductSummary = (slug: string, signal?: AbortSignal) => get<ProductSummary>(`/products/${encodeURIComponent(slug)}/summary`, signal);
   const getProductImages = (slug: string, signal?: AbortSignal) => get<ProductImage[]>(`/products/${encodeURIComponent(slug)}/images`, signal);
   const getProductDetails = (slug: string, signal?: AbortSignal) => get<ProductDetails>(`/products/${encodeURIComponent(slug)}/details`, signal);
-  const getRelatedProducts = (slug: string, signal?: AbortSignal) => get<ProductPreview[]>(`/products/${encodeURIComponent(slug)}/related`, signal);
+  const getRelatedProducts = async (slug: string, signal?: AbortSignal) =>
+    (await get<ProductPreview[]>(`/products/${encodeURIComponent(slug)}/related?size=4`, signal)).slice(0, 4);
 
   async function getFeaturedProducts(ids: string[], signal?: AbortSignal) {
     if (!ids.length) return [];

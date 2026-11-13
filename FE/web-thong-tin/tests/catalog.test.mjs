@@ -192,12 +192,24 @@ test('product sections have independent encoded endpoints and related uses one r
   const summary = { id: product.id, slug: product.slug, name: product.name, categoryId: product.categoryId, priceVnd: product.priceVnd, shortDescription: product.shortDescription, primaryImage: product.images[0] };
   const details = { description: product.description, specifications: product.specifications, material: 'Gỗ sồi' };
   const prefix = '/api/products/m%E1%BB%9Bi%2Fslug';
-  const payloads = { [`${prefix}/summary`]: summary, [`${prefix}/images`]: product.images, [`${prefix}/details`]: details, [`${prefix}/related`]: [] };
+  const payloads = { [`${prefix}/summary`]: summary, [`${prefix}/images`]: product.images, [`${prefix}/details`]: details, [`${prefix}/related?size=4`]: [] };
   const api = createCatalogApi('/api', async (url) => { calls.push(url); assert.ok(url in payloads); return json(payloads[url]); });
   assert.deepEqual(await Promise.all([
     api.getProductSummary('mới/slug'), api.getProductImages('mới/slug'), api.getProductDetails('mới/slug'), api.getRelatedProducts('mới/slug'),
   ]), [summary, product.images, details, []]);
   assert.deepEqual(calls.sort(), Object.keys(payloads).sort());
+});
+
+test('related products request four suggestions and cap oversized responses without changing their ranking', async () => {
+  const suggestions = Array.from({ length: 7 }, (_, index) => ({ ...products[0], id: `suggestion-${index}` }));
+  let requests = 0;
+  const api = createCatalogApi('/api', async (url) => {
+    requests++;
+    assert.equal(url, '/api/products/ghe-an-nordic/related?size=4');
+    return json(suggestions);
+  });
+  assert.deepEqual(await api.getRelatedProducts('ghe-an-nordic'), suggestions.slice(0, 4));
+  assert.equal(requests, 1);
 });
 
 test('a failing product section leaves summary available and retries independently', async () => {
@@ -236,13 +248,20 @@ test('URL query accepts dynamic slugs and UUIDs; validates sort, length and page
 });
 
 test('typed product attributes replace placeholders while preserving other specifications', () => {
-  const product = { ...products[0], lengthCm: 80.5, widthCm: null, heightCm: 42, material: 'Gỗ sồi', color: 'Nâu' };
+  const placeholders = [
+    { label: 'Chất liệu', value: null },
+    { label: 'Kích thước', value: null },
+    { label: 'Màu sắc', value: null },
+    { label: 'Gợi ý bố trí', value: 'Phòng khách' },
+  ];
+  const product = { ...products[0], specifications: placeholders, lengthCm: 80.5, widthCm: null, heightCm: 42, material: 'Gỗ sồi', color: 'Nâu' };
   const specs = getSpecifications(product);
   assert.equal(specs.find((s) => s.label === 'Chất liệu').value, 'Gỗ sồi');
   assert.equal(specs.find((s) => s.label === 'Màu sắc').value, 'Nâu');
   assert.equal(specs.find((s) => s.label === 'Kích thước').value, 'Dài 80,5 cm × Cao 42 cm');
-  assert.equal(products[0].specifications[0].value, null);
-  assert.deepEqual(getSpecifications(products[0]), products[0].specifications);
+  assert.equal(placeholders[0].value, null);
+  assert.equal(specs.find((s) => s.label === 'Gợi ý bố trí').value, 'Phòng khách');
+  assert.deepEqual(getSpecifications({ specifications: placeholders }), placeholders);
 });
 
 test('reference prices use Vietnamese formatting', () => {
