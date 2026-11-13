@@ -1,51 +1,227 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getProduct, getRelatedProducts, listProducts } from '../src/services/catalog.ts';
-import { createCatalogParams, formatPrice, parseCatalogQuery } from '../src/utils/catalog.ts';
+import { CatalogApiError, createCatalogApi } from '../src/services/catalog.ts';
+import { products } from '../src/data/catalog.ts';
+import { createCatalogParams, formatPrice, getSpecifications, parseCatalogQuery } from '../src/utils/catalog.ts';
 
 const all = { q: '', category: '', sort: 'featured' };
+const json = (value, status = 200) => Response.json(value, { status });
 
-test('Vietnamese names are searchable without accents and regardless of case', () => {
-  assert.deepEqual(listProducts({ ...all, q: '  GHE AN  ' }).items.map((p) => p.slug), ['ghe-an-nordic']);
-  assert.deepEqual(listProducts({ ...all, q: 'DEN BAN' }).items.map((p) => p.slug), ['den-ban-horizon']);
+test('catalog forwards search, category UUID, sort and pagination to BE', async () => {
+  let actual;
+  const result = { items: [products[0]], total: 25, page: 1, size: 24 };
+  const api = createCatalogApi('https://api.example/api/', async (url, options) => {
+    actual = new URL(url);
+    assert.equal(options.headers.Accept, 'application/json');
+    return json(result);
+  });
+  assert.deepEqual(await api.listProducts({ q: '  ĐÈN BÀN ', category: '550e8400-e29b-41d4-a716-446655440000', sort: 'price-desc', page: 1 }), result);
+  assert.equal(actual.pathname, '/api/products');
+  assert.deepEqual(Object.fromEntries(actual.searchParams), { q: '  ĐÈN BÀN ', category: '550e8400-e29b-41d4-a716-446655440000', sort: 'price-desc', page: '1', size: '24' });
 });
 
-test('search and category filters combine, including no matches', () => {
-  assert.equal(listProducts({ ...all, category: 'gom-su' }).total, 2);
-  assert.equal(listProducts({ ...all, category: 'gom-su', q: 'ghe' }).total, 0);
-  assert.equal(listProducts({ ...all, q: 'khong co mon nay' }).total, 0);
+test('categories and home are loaded from API instead of local fixtures', async () => {
+  const api = createCatalogApi('/api', async (url) => json(url.endsWith('/categories') ? [{ id: 'uuid', slug: 'moi', name: 'Danh mục mới' }] : { heroTitle: 'Nội dung từ BE', featuredProductIds: [] }));
+  assert.equal((await api.listCategories())[0].slug, 'moi');
+  assert.equal((await api.getHomeContent()).heroTitle, 'Nội dung từ BE');
 });
 
-test('price sorts are numeric and do not mutate featured order', () => {
-  const prices = (sort) => listProducts({ ...all, sort }).items.map((p) => p.priceVnd);
-  assert.deepEqual(prices('price-asc'), [450000, 620000, 1250000, 2900000]);
-  assert.deepEqual(prices('price-desc'), [2900000, 1250000, 620000, 450000]);
-  assert.deepEqual(prices('featured'), [620000, 2900000, 1250000, 450000]);
+test('home sections have independent endpoints without a home-to-catalog dependency', async () => {
+  const calls = [];
+  const hero = { heroTitle: 'Giới thiệu', heroDescription: 'Luma', heroImage: products[0].images[0] };
+  const spaces = [{ title: 'Phòng khách', description: 'Không gian sống', image: products[0].images[0], href: '/san-pham' }];
+  const payloads = { '/api/home/hero': hero, '/api/home/featured-products': [products[0]], '/api/home/spaces': spaces };
+  const api = createCatalogApi('/api', async (url) => { calls.push(url); assert.ok(url in payloads); return json(payloads[url]); });
+  assert.deepEqual(await Promise.all([api.getHomeHero(), api.getHomeFeaturedProducts(), api.getHomeSpaces()]), [hero, [products[0]], spaces]);
+  assert.deepEqual(calls.sort(), Object.keys(payloads).sort());
 });
 
-test('invalid URLs normalize safely and valid filters survive a URL roundtrip', () => {
-  assert.deepEqual(parseCatalogQuery(new URLSearchParams('category=invalid&sort=invalid&q=%20ghế%20')), { ...all, q: 'ghế' });
-  const query = { q: 'gốm mộc', category: 'gom-su', sort: 'price-asc' };
-  assert.deepEqual(parseCatalogQuery(createCatalogParams(query)), query);
+test('detail encodes slug and preserves new attributes and image publicId', async () => {
+  const product = { ...products[0], material: 'Gỗ sồi', lengthCm: 32.5, images: [{ ...products[0].images[0], publicId: 'luma/catalog/id' }] };
+  const api = createCatalogApi('/api', async (url) => {
+    assert.equal(url, '/api/products/m%E1%BB%9Bi%2Fslug');
+    return json(product);
+  });
+  assert.deepEqual(await api.getProduct('mới/slug'), product);
+});
+
+for (const status of [400, 404, 500, 503]) {
+  test(`HTTP ${status} remains an error and never falls back to demo data`, async () => {
+    const api = createCatalogApi('/api', async () => json({ detail: 'Internal detail' }, status));
+    await assert.rejects(api.getProduct('missing'), (error) => error instanceof CatalogApiError && error.status === status && !error.message.includes('Internal'));
+  });
+}
+
+test('HTML returned by a broken proxy is reported as an API error', async () => {
+  const api = createCatalogApi('/api', async () => new Response('<html>SPA</html>', { headers: { 'Content-Type': 'text/html' } }));
+  await assert.rejects(api.listCategories(), (error) => error.status === 502);
+});
+
+test('network failure is propagated and a subsequent retry can recover', async () => {
+  let calls = 0;
+  const api = createCatalogApi('/api', async () => { if (++calls === 1) throw new TypeError('Failed to fetch'); return json([]); });
+  await assert.rejects(api.listCategories(), TypeError);
+  assert.deepEqual(await api.listCategories(), []);
+});
+
+test('cancellation reaches the fetch request', async () => {
+  const controller = new AbortController();
+  const api = createCatalogApi('/api', async (_url, { signal }) => {
+    controller.abort();
+    signal.throwIfAborted();
+  });
+  await assert.rejects(api.getProduct('cancelled', controller.signal), { name: 'AbortError' });
+});
+
+function memoryStorage() {
+  const entries = new Map();
+  return { entries, getItem: (key) => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value) };
+}
+
+const categoryList = [{ id: 'ceramics-id', slug: 'gom-su', name: 'Gốm sứ' }];
+
+test('categories share one in-flight request and reuse the result across calls', async () => {
+  let calls = 0;
+  let complete;
+  const response = new Promise(resolve => { complete = resolve; });
+  const api = createCatalogApi('/api', async () => { calls++; return response; }, memoryStorage());
+  const first = api.listCategories();
+  const second = api.listCategories();
+  assert.equal(calls, 1);
+  complete(json(categoryList));
+  assert.deepEqual(await Promise.all([first, second]), [categoryList, categoryList]);
+  assert.deepEqual(await api.listCategories(), categoryList);
+  assert.equal(calls, 1);
+});
+
+test('categories persist in session storage and are reusable within the same page load', async () => {
+  const storage = memoryStorage();
+  const api = createCatalogApi('/api', async () => json(categoryList), storage);
+  await api.listCategories();
+  assert.equal(storage.entries.size, 1);
+  const second = createCatalogApi('/api', async () => { assert.fail('Must use saved categories'); }, storage);
+  assert.deepEqual(await second.listCategories(), categoryList);
+});
+
+test('a new page load refreshes categories instead of keeping old session data', async () => {
+  const storage = memoryStorage();
+  await createCatalogApi('/api', async () => json(categoryList), storage).listCategories();
+  const [key, value] = [...storage.entries][0];
+  storage.setItem(key, JSON.stringify({ ...JSON.parse(value), pageStartedAt: -1 }));
+  let calls = 0;
+  const fresh = [{ id: 'new-id', slug: 'moi', name: 'Danh mục mới' }];
+  const reloaded = createCatalogApi('/api', async () => { calls++; return json(fresh); }, storage);
+  assert.deepEqual(await reloaded.listCategories(), fresh);
+  assert.deepEqual(await reloaded.listCategories(), fresh);
+  assert.equal(calls, 1);
+});
+
+test('cancelling one category consumer leaves the shared request alive for another', async () => {
+  const controller = new AbortController();
+  let complete;
+  let fetchSignal;
+  let calls = 0;
+  const response = new Promise(resolve => { complete = resolve; });
+  const api = createCatalogApi('/api', async (_url, options) => { calls++; fetchSignal = options.signal; return response; }, memoryStorage());
+  const first = api.listCategories(controller.signal);
+  const second = api.listCategories();
+  controller.abort();
+  await assert.rejects(first, { name: 'AbortError' });
+  assert.equal(fetchSignal.aborted, false);
+  complete(json(categoryList));
+  assert.deepEqual(await second, categoryList);
+  assert.deepEqual(await api.listCategories(), categoryList);
+  assert.equal(calls, 1);
+});
+
+test('an already cancelled category consumer does not start a request', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const api = createCatalogApi('/api', async () => { assert.fail('Request must not start'); }, memoryStorage());
+  await assert.rejects(api.listCategories(controller.signal), { name: 'AbortError' });
+});
+
+test('failed categories are not saved and retry can populate the cache', async () => {
+  const storage = memoryStorage();
+  let calls = 0;
+  const api = createCatalogApi('/api', async () => ++calls === 1 ? json({}, 503) : json(categoryList), storage);
+  await assert.rejects(api.listCategories(), error => error.status === 503);
+  assert.equal(storage.entries.size, 0);
+  assert.deepEqual(await api.listCategories(), categoryList);
+  assert.deepEqual(await api.listCategories(), categoryList);
+  assert.equal(calls, 2);
+});
+
+test('invalid or inaccessible category storage falls back to API and memory', async () => {
+  for (const value of ['{broken', JSON.stringify({ pageStartedAt: performance.timeOrigin, items: [null] })]) {
+    let calls = 0;
+    const storage = { getItem: () => value, setItem: () => { throw new Error('Quota exceeded'); } };
+    const api = createCatalogApi('/api', async () => { calls++; return json(categoryList); }, storage);
+    assert.deepEqual(await api.listCategories(), categoryList);
+    assert.deepEqual(await api.listCategories(), categoryList);
+    assert.equal(calls, 1);
+  }
+  const blocked = { getItem: () => { throw new Error('Storage disabled'); }, setItem: () => { throw new Error('Storage disabled'); } };
+  const api = createCatalogApi('/api', async () => json(categoryList), blocked);
+  assert.deepEqual(await api.listCategories(), categoryList);
+});
+
+test('category caches stay separate for different API base URLs', async () => {
+  const storage = memoryStorage();
+  await createCatalogApi('/api', async () => json(categoryList), storage).listCategories();
+  const other = [{ id: 'other-id', slug: 'khac', name: 'Khác' }];
+  assert.deepEqual(await createCatalogApi('/other-api', async () => json(other), storage).listCategories(), other);
+  assert.equal(storage.entries.size, 2);
+});
+
+test('featured products scan additional pages and retain the home UUID order', async () => {
+  const pages = [];
+  const api = createCatalogApi('/api', async (url) => {
+    const page = Number(new URL(url, 'http://local').searchParams.get('page'));
+    pages.push(page);
+    return json({ items: [products[page]], page, size: 1, total: 4 });
+  });
+  assert.deepEqual((await api.getFeaturedProducts([products[2].id, products[0].id, 'hidden'])).map((p) => p.id), [products[2].id, products[0].id]);
+  assert.deepEqual(pages, [0, 1, 2, 3]);
+  assert.deepEqual(await api.getFeaturedProducts([]), []);
+});
+
+test('related products prioritize category, deduplicate, exclude self and cap at eight', async () => {
+  const selected = products[0];
+  const related = Array.from({ length: 12 }, (_, i) => ({ ...products[3], id: `new-${i}` }));
+  const api = createCatalogApi('/api', async (url) => {
+    const category = new URL(url, 'http://local').searchParams.get('category');
+    return json({ items: category ? [selected, related[0], related[1]] : [selected, ...related], page: 0, size: 9, total: 13 });
+  });
+  const result = await api.getRelatedProducts(selected);
+  assert.equal(result.length, 8);
+  assert.equal(new Set(result.map((p) => p.id)).size, 8);
+  assert.deepEqual(result.slice(0, 2).map((p) => p.id), ['new-0', 'new-1']);
+  assert.ok(result.every((p) => p.id !== selected.id));
+});
+
+test('URL query accepts dynamic slugs and UUIDs; validates sort, length and page', () => {
+  assert.deepEqual(parseCatalogQuery(new URLSearchParams('category=%3Cbad%3E&sort=invalid&q=%20ghế%20&page=-1')), { ...all, q: 'ghế' });
+  for (const category of ['danh-muc-moi', '550e8400-e29b-41d4-a716-446655440000']) {
+    const query = { q: 'gốm mộc', category, sort: 'price-asc', page: 2 };
+    assert.deepEqual(parseCatalogQuery(createCatalogParams(query)), query);
+  }
+  for (const page of ['-1', '1.2', 'NaN', '2147483648']) assert.equal(parseCatalogQuery(new URLSearchParams({ page })).page, undefined);
   assert.equal(createCatalogParams(all).toString(), '');
   assert.equal(parseCatalogQuery(new URLSearchParams({ q: 'a'.repeat(200) })).q.length, 120);
 });
 
-test('product detail resolves known slugs and missing slugs are absent', () => {
-  assert.equal(getProduct('ghe-an-nordic')?.priceVnd, 2900000);
-  assert.equal(getProduct('san-pham-khong-co'), undefined);
+test('typed product attributes replace placeholders while preserving other specifications', () => {
+  const product = { ...products[0], lengthCm: 80.5, widthCm: null, heightCm: 42, material: 'Gỗ sồi', color: 'Nâu' };
+  const specs = getSpecifications(product);
+  assert.equal(specs.find((s) => s.label === 'Chất liệu').value, 'Gỗ sồi');
+  assert.equal(specs.find((s) => s.label === 'Màu sắc').value, 'Nâu');
+  assert.equal(specs.find((s) => s.label === 'Kích thước').value, 'Dài 80,5 cm × Cao 42 cm');
+  assert.equal(products[0].specifications[0].value, null);
+  assert.deepEqual(getSpecifications(products[0]), products[0].specifications);
 });
 
-test('related products prioritize the same category, fill with other items and exclude self', () => {
-  const related = getRelatedProducts('p-binh-gom-luma');
-  assert.deepEqual(related.map((p) => p.slug), ['bo-coc-gom-moc', 'ghe-an-nordic', 'den-ban-horizon']);
-  assert.equal(new Set(related.map((p) => p.id)).size, related.length);
-  assert.ok(related.every((p) => p.id !== 'p-binh-gom-luma'));
-  assert.deepEqual(getRelatedProducts('p-ghe-an-nordic').map((p) => p.slug), ['binh-gom-luma', 'den-ban-horizon', 'bo-coc-gom-moc']);
-  assert.deepEqual(getRelatedProducts('missing-product'), []);
-});
-
-test('reference prices use consistent Vietnamese formatting', () => {
+test('reference prices use Vietnamese formatting', () => {
   assert.equal(formatPrice(2900000), '2.900.000đ');
   assert.equal(formatPrice(450000), '450.000đ');
 });

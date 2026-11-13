@@ -84,7 +84,7 @@
 
   .hero { display: grid; grid-template-columns: 44% 56%; background: var(--warm); height: 440px; }
   .hero-copy { display: flex; align-items: center; padding: 44px 36px 48px max(48px, calc((100vw - 1280px) / 2)); }
-  .hero-copy-inner { max-width: 490px; }
+  .hero-copy-inner { max-width: 490px; width: 100%; }
   .eyebrow { display: flex; align-items: center; gap: 12px; text-transform: uppercase; letter-spacing: .13em; font-size: 10px; margin-bottom: 22px; color: #4e5147; }
   .eyebrow span { width: 24px; height: 1px; background: currentColor; }
   .hero h1 { font-size: clamp(36px, 3.4vw, 50px); line-height: 1.18; font-weight: 600; letter-spacing: -.055em; }
@@ -120,6 +120,20 @@
   .about-label { font-size: 14px; color: var(--muted); }
   .about-inner h2 { font-size: 36px; line-height: 1.35; }
   .about-inner > div > p { max-width: 610px; margin: 24px 0 20px; color: var(--muted); line-height: 1.9; font-size: 15px; }
+
+  .home-skeleton { background: #e9e6df; border-radius: 4px; }
+  .hero-image > .home-skeleton { width: 100%; height: 100%; }
+  .hero-title-placeholder { height: 2.36em; font-size: clamp(36px, 3.4vw, 50px); }
+  .hero-description-placeholder { height: 56px; margin-top: 22px; max-width: 435px; }
+  .home-placeholder-meta { width: 100%; }
+  .home-placeholder-title { height: 22px; width: 72%; }
+  .home-placeholder-description { height: 22px; width: 44%; margin-top: 4px; }
+  .home-space-placeholder { aspect-ratio: 16/10; }
+  .spaces .home-placeholder-title { height: 29px; }
+  .spaces .home-placeholder-description { margin-top: 7px; }
+  .home-section-state { min-height: 288px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--muted); text-align: center; }
+  .hero .home-section-state { min-height: 140px; align-items: flex-start; text-align: left; }
+  .spaces .home-section-state { min-height: 470px; }
 
   .catalog-intro { background: var(--warm); padding: 52px 0 45px; text-align: center; }
   .catalog-intro h1 { font-size: 42px; }
@@ -214,6 +228,7 @@
     .header-inner { width: 100%; }
     .hero-copy { padding-left: 32px; padding-right: 24px; }
     .hero h1 { font-size: 40px; }
+    .hero-title-placeholder { font-size: 40px; }
     .hero { grid-template-columns: 46% 54%; }
     .product-detail { gap: 40px; }
     .product-info h1 { font-size: 36px; }
@@ -223,6 +238,7 @@
     .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
     .related-products .product-card:nth-child(n+7) { display: none; }
     .hero h1 { font-size: 36px; }
+    .hero-title-placeholder { font-size: 36px; }
     .hero-description { font-size: 14px; }
     .hero-copy { padding-block: 36px; }
     .desktop-nav { gap: 24px; }
@@ -254,6 +270,8 @@
     .hero-copy { padding: 28px 20px 32px; }
     .hero-copy-inner { max-width: 530px; }
     .hero h1 { font-size: 34px; max-width: 450px; }
+    .hero-title-placeholder { font-size: 34px; }
+    .hero-description-placeholder { margin-top: 16px; height: 49px; }
     .eyebrow { margin-bottom: 14px; font-size: 9px; }
     .hero-description { margin-top: 16px; max-width: 410px; font-size: 14px; }
     .hero .button { margin-top: 22px; }
@@ -304,6 +322,9 @@
     .hero-image { height: 264px; }
     .hero-copy { padding-inline: 16px; }
     .hero h1 { font-size: 32px; }
+    .hero-title-placeholder { font-size: 32px; }
+    .home-placeholder-title { height: 21px; }
+    .home-placeholder-description { height: 19px; }
     .hero-description { max-width: 350px; }
     .product-grid { gap: 24px 12px; }
     .product-card h3 { font-size: 13px; line-height: 1.6; }
@@ -348,3 +369,9 @@
     *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   }
 }
+
+.data-status { min-height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 18px; text-align: center; padding-block: 56px; }
+.catalog-section .data-status { width: 100%; }
+.catalog-pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-block: 36px; flex-wrap: wrap; }
+.catalog-pagination button { border: 1px solid var(--border, #ddd); }
+.catalog-pagination button:disabled { opacity: .45; cursor: default; }

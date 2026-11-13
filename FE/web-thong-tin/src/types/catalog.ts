@@ -4,6 +4,7 @@ export interface ProductImage {
   alt: string;
   width: number;
   height: number;
+  publicId?: string | null;
 }
 
 export interface Specification {
@@ -24,6 +25,11 @@ export interface Product {
   specifications: Specification[];
   displayOrder: number;
   isFeatured: boolean;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  material?: string | null;
+  color?: string | null;
 }
 
 export interface Category {
@@ -37,4 +43,23 @@ export interface CatalogQuery {
   q: string;
   category: string;
   sort: SortOrder;
+  page?: number;
 }
+
+export interface ProductPage {
+  items: Product[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface HomeContent {
+  heroTitle: string;
+  heroDescription: string;
+  heroImage: ProductImage;
+  featuredProductIds: string[];
+  spaces: { title: string; description: string; image: ProductImage; href: string }[];
+}
+
+export type HomeHero = Pick<HomeContent, 'heroTitle' | 'heroDescription' | 'heroImage'>;
+export type HomeSpace = HomeContent['spaces'][number];
