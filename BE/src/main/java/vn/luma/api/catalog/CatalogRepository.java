@@ -97,23 +97,41 @@ public class CatalogRepository {
     }
 
     public Optional<List<ProductPreview>> getRelatedProducts(String slug, int size) {
-        // One bounded query: same category first, then other public products. The left join
-        // distinguishes a missing source product (no rows) from no recommendations (one null row).
+        // One bounded query: shared collection/name, product type, category, then fallback.
+        // Generic furniture/material terms do not count as a shared collection name.
+        // The left join distinguishes a missing source (no rows) from no suggestions (one null row).
         var rows = jdbc.query("""
-            WITH source AS (SELECT p.id, p.category_id
+            WITH source AS (
+                SELECT p.id, p.category_id,
+                    regexp_split_to_array(p.search_name, '[^a-z0-9]+') AS name_words,
+                    split_part(regexp_replace(btrim(p.search_name), '^(bo|set) +', ''), ' ', 1) AS product_type
             """ + PUBLIC_PRODUCTS + " AND p.slug = :slug) " + """
             SELECT related.id, related.slug, related.name, related.price_vnd, related.images
             FROM source s LEFT JOIN LATERAL (
                 SELECT p.id, p.slug, p.name, p.price_vnd, p.display_order,
+                    relevance.series_score, relevance.name_score,
+                    (split_part(regexp_replace(btrim(p.search_name), '^(bo|set) +', ''), ' ', 1) = s.product_type) AS same_type,
                     (p.category_id = s.category_id) AS same_category,
                     jsonb_build_array(p.images->0)::text AS images
-            """ + PUBLIC_PRODUCTS + """
+                FROM luma.products p JOIN luma.categories c ON c.id = p.category_id
+                CROSS JOIN LATERAL (
+                    SELECT count(*) FILTER (WHERE word NOT IN ('an', 'tra', 'tha', 'bap', 'benh', 'trang', 'tri')) AS series_score,
+                        count(*) AS name_score
+                    FROM (SELECT DISTINCT token AS word
+                        FROM regexp_split_to_table(p.search_name, '[^a-z0-9]+') AS token) words
+                    WHERE word = ANY(s.name_words) AND length(word) > 1
+                        AND word NOT IN ('ghe', 'ban', 'den', 'tu', 'ke', 'binh', 'bo', 'coc', 'gom', 'su',
+                            'go', 'soi', 'nhien', 'cao', 'cap', 'noi', 'that')
+                ) relevance
+                WHERE p.is_published AND c.is_published
                 AND p.id <> s.id
-                ORDER BY (p.category_id = s.category_id) DESC, p.display_order, p.id
+                ORDER BY relevance.series_score DESC, relevance.name_score DESC, same_type DESC,
+                    same_category DESC, p.display_order, p.id
                 LIMIT :size
             ) related ON true
-            ORDER BY related.same_category DESC, related.display_order, related.id
-            """, Map.of("slug", slug, "size", size), (rs, row) -> {
+            ORDER BY related.series_score DESC, related.name_score DESC, related.same_type DESC,
+                related.same_category DESC, related.display_order, related.id
+            """, Map.of("slug", slug, "size", Math.min(size, 4)), (rs, row) -> {
                 if (rs.getObject("id") == null) return null;
                 var images = decode(rs.getString("images"), new TypeReference<List<ProductImage>>() {});
                 return new ProductPreview(rs.getObject("id", UUID.class), rs.getString("slug"), rs.getString("name"),

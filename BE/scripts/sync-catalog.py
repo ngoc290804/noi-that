@@ -114,9 +114,10 @@ def source_catalog():
 def image_occurrences(source):
     for product in source['products']:
         yield from product['images']
-    yield source['home']['heroImage']
-    for space in source['home']['spaces']:
-        yield space['image']
+    if 'home' in source:
+        yield source['home']['heroImage']
+        for space in source['home']['spaces']:
+            yield space['image']
 
 
 def source_files(source):
@@ -274,7 +275,8 @@ UPDATE luma.products p SET {column}=(item->>'{key}')::{datatype}
 FROM catalog_sync_input CROSS JOIN LATERAL jsonb_array_elements(payload->'products') item
 WHERE item ? '{key}' AND p.slug=item->>'slug' AND p.{column} IS DISTINCT FROM (item->>'{key}')::{datatype};
 """
-    sql += """
+    if 'home' in payload:
+        sql += """
 INSERT INTO luma.home_content AS existing (code, content, is_published)
 SELECT 'home', jsonb_set(payload->'home', '{featuredProductIds}', (
     SELECT coalesce(jsonb_agg(to_jsonb(p.id) ORDER BY element.ordinality), '[]')
@@ -316,14 +318,17 @@ def verify_database(before, after, payload):
                 assert actual[column] == source[key]
             elif previous:
                 assert actual[column] == previous[column]
-    home = next(row for row in after['home'] if row['code'] == 'home')
-    old_home = next((row for row in before['home'] if row['code'] == 'home'), None)
-    uuid.UUID(home['id'])
-    if old_home:
-        assert home['id'] == old_home['id']
-    expected_home = copy.deepcopy(payload['home'])
-    expected_home['featuredProductIds'] = [products[slug]['id'] for slug in payload['featuredProductSlugs']]
-    assert home['content'] == expected_home and home['is_published']
+    if 'home' in payload:
+        home = next(row for row in after['home'] if row['code'] == 'home')
+        old_home = next((row for row in before['home'] if row['code'] == 'home'), None)
+        uuid.UUID(home['id'])
+        if old_home:
+            assert home['id'] == old_home['id']
+        expected_home = copy.deepcopy(payload['home'])
+        expected_home['featuredProductIds'] = [products[slug]['id'] for slug in payload['featuredProductSlugs']]
+        assert home['content'] == expected_home and home['is_published']
+    else:
+        assert before['home'] == after['home']
     # Unrelated records are outside the sync scope and must remain unchanged.
     for entity, source_slugs in (('categories', {x['slug'] for x in payload['categories']}),
                                  ('products', {x['slug'] for x in payload['products']})):
@@ -337,16 +342,25 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--apply', action='store_true', help='Back up, upload images and sync Neon.')
     mode.add_argument('--dry-run', action='store_true', help='Preview without uploading or changing DB (default).')
+    parser.add_argument('--product', metavar='SLUG', help='Sync only this product; preserve other products, categories and homepage.')
     args = parser.parse_args()
     config = configuration()
     payload = source_catalog()
+    if args.product:
+        selected = [product for product in payload['products'] if product['slug'] == args.product]
+        if not selected:
+            raise SyncError('Product slug not found in source: ' + args.product)
+        payload = {'categories': [], 'products': selected}
     files = source_files(payload)
     db = Database(config)
     cloud = Cloudinary(config)
     if cloud.request('/ping').get('status') != 'ok':
         raise SyncError('Cloudinary authentication check failed.')
     before = db.execute(SNAPSHOT_SQL)
-    print(f"Source: {len(payload['categories'])} categories, {len(payload['products'])} products, 1 homepage, {len(files)} unique image files.", flush=True)
+    if args.product and not any(category['slug'] == payload['products'][0]['categorySlug'] for category in before['categories']):
+        raise SyncError('Product category missing in database; sync the catalog categories first.')
+    homepages = int('home' in payload)
+    print(f"Source: {len(payload['categories'])} categories, {len(payload['products'])} products, {homepages} homepage, {len(files)} unique image files.", flush=True)
     folder = None
     if args.apply:
         private = BE / '.local'
@@ -418,7 +432,7 @@ def main():
     after = db.execute(sql)
     save_json(folder / 'after.json', after)
     verify_database(before, after, payload)
-    summary = {'categories': len(payload['categories']), 'products': len(payload['products']), 'homepages': 1,
+    summary = {'categories': len(payload['categories']), 'products': len(payload['products']), 'homepages': homepages,
                'uniqueImages': len(assets), 'uploadedImages': created, 'reusedImages': reused,
                'assetFolder': CATALOG_ASSET_FOLDER, 'organizedImages': moved,
                'databaseChanged': before != after, 'verified': True}

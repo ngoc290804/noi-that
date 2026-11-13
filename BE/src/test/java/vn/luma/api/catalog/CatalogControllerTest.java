@@ -171,7 +171,7 @@ class CatalogControllerTest {
 
     @Test
     void relatedProductsUseOneBoundedEndpointWithPreviewFields() throws Exception {
-        when(catalog.getRelatedProducts("chair", 8)).thenReturn(Optional.of(List.of(
+        when(catalog.getRelatedProducts("chair", 4)).thenReturn(Optional.of(List.of(
             new ProductPreview(UUID.randomUUID(), "lamp", "Đèn", 100000, List.of()))));
         when(catalog.getRelatedProducts("chair", 2)).thenReturn(Optional.of(List.of()));
         mvc.perform(get("/api/products/chair/related"))
@@ -181,14 +181,14 @@ class CatalogControllerTest {
             .andExpect(jsonPath("$[0].description").doesNotExist());
         mvc.perform(get("/api/products/chair/related?size=2"))
             .andExpect(status().isOk()).andExpect(content().json("[]"));
-        verify(catalog).getRelatedProducts("chair", 8);
+        verify(catalog).getRelatedProducts("chair", 4);
         verify(catalog).getRelatedProducts("chair", 2);
         verifyNoMoreInteractions(catalog);
     }
 
     @Test
     void invalidProductSectionParametersNeverReachDatabase() throws Exception {
-        for (String size : List.of("0", "-1", "9", "abc")) {
+        for (String size : List.of("0", "-1", "5", "8", "abc")) {
             mvc.perform(get("/api/products/chair/related").param("size", size)).andExpect(status().isBadRequest());
         }
         for (String section : List.of("summary", "images", "details", "related")) {
@@ -202,7 +202,7 @@ class CatalogControllerTest {
         when(catalog.getProductSummary("missing")).thenReturn(Optional.empty());
         when(catalog.getProductImages("missing")).thenReturn(Optional.empty());
         when(catalog.getProductDetails("missing")).thenReturn(Optional.empty());
-        when(catalog.getRelatedProducts("missing", 8)).thenReturn(Optional.empty());
+        when(catalog.getRelatedProducts("missing", 4)).thenReturn(Optional.empty());
         for (String section : List.of("summary", "images", "details", "related")) {
             mvc.perform(get("/api/products/missing/" + section)).andExpect(status().isNotFound());
         }

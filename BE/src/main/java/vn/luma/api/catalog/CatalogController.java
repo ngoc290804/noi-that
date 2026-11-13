@@ -62,7 +62,7 @@ public class CatalogController {
     @GetMapping("/products/{slug}/related")
     public List<ProductPreview> relatedProducts(
         @PathVariable @Size(max = 160) String slug,
-        @RequestParam(defaultValue = "8") @Min(1) @Max(8) int size
+        @RequestParam(defaultValue = "4") @Min(1) @Max(4) int size
     ) {
         return catalog.getRelatedProducts(slug, size)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm."));
