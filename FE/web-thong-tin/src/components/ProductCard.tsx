@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import type { Product } from '../types/catalog';
+import type { ProductPreview } from '../types/catalog';
 import { formatPrice } from '../utils/catalog';
 import { Icon } from './Icon';
 import { Photo } from './Photo';
 
-export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
+export function ProductCard({ product, priority = false }: { product: ProductPreview; priority?: boolean }) {
   const location = useLocation();
   const catalogUrl = location.pathname === '/san-pham' ? `${location.pathname}${location.search}` : '/san-pham';
   return (
@@ -19,6 +19,6 @@ export function ProductCard({ product, priority = false }: { product: Product; p
   );
 }
 
-export function ProductGrid({ products, priority = false }: { products: readonly Product[]; priority?: boolean }) {
+export function ProductGrid({ products, priority = false }: { products: readonly ProductPreview[]; priority?: boolean }) {
   return <div className="product-grid">{products.map((product, index) => <ProductCard key={product.id} product={product} priority={priority && index < 4} />)}</div>;
 }

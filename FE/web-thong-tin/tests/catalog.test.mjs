@@ -186,18 +186,42 @@ test('featured products scan additional pages and retain the home UUID order', a
   assert.deepEqual(await api.getFeaturedProducts([]), []);
 });
 
-test('related products prioritize category, deduplicate, exclude self and cap at eight', async () => {
-  const selected = products[0];
-  const related = Array.from({ length: 12 }, (_, i) => ({ ...products[3], id: `new-${i}` }));
+test('product sections have independent encoded endpoints and related uses one request', async () => {
+  const calls = [];
+  const product = products[0];
+  const summary = { id: product.id, slug: product.slug, name: product.name, categoryId: product.categoryId, priceVnd: product.priceVnd, shortDescription: product.shortDescription, primaryImage: product.images[0] };
+  const details = { description: product.description, specifications: product.specifications, material: 'Gỗ sồi' };
+  const prefix = '/api/products/m%E1%BB%9Bi%2Fslug';
+  const payloads = { [`${prefix}/summary`]: summary, [`${prefix}/images`]: product.images, [`${prefix}/details`]: details, [`${prefix}/related`]: [] };
+  const api = createCatalogApi('/api', async (url) => { calls.push(url); assert.ok(url in payloads); return json(payloads[url]); });
+  assert.deepEqual(await Promise.all([
+    api.getProductSummary('mới/slug'), api.getProductImages('mới/slug'), api.getProductDetails('mới/slug'), api.getRelatedProducts('mới/slug'),
+  ]), [summary, product.images, details, []]);
+  assert.deepEqual(calls.sort(), Object.keys(payloads).sort());
+});
+
+test('a failing product section leaves summary available and retries independently', async () => {
+  let detailsCalls = 0;
+  let summaryCalls = 0;
   const api = createCatalogApi('/api', async (url) => {
-    const category = new URL(url, 'http://local').searchParams.get('category');
-    return json({ items: category ? [selected, related[0], related[1]] : [selected, ...related], page: 0, size: 9, total: 13 });
+    if (url.endsWith('/summary')) { summaryCalls++; return json({ name: 'Ghế' }); }
+    if (url.endsWith('/details')) return ++detailsCalls === 1 ? json({}, 503) : json({ specifications: [] });
+    assert.fail(`Unexpected request: ${url}`);
   });
-  const result = await api.getRelatedProducts(selected);
-  assert.equal(result.length, 8);
-  assert.equal(new Set(result.map((p) => p.id)).size, 8);
-  assert.deepEqual(result.slice(0, 2).map((p) => p.id), ['new-0', 'new-1']);
-  assert.ok(result.every((p) => p.id !== selected.id));
+  const results = await Promise.allSettled([api.getProductSummary('chair'), api.getProductDetails('chair')]);
+  assert.equal(results[0].value.name, 'Ghế');
+  assert.equal(results[1].reason.status, 503);
+  assert.deepEqual(await api.getProductDetails('chair'), { specifications: [] });
+  assert.equal(summaryCalls, 1);
+  assert.equal(detailsCalls, 2);
+});
+
+test('all product sections forward cancellation', async () => {
+  for (const method of ['getProductSummary', 'getProductImages', 'getProductDetails', 'getRelatedProducts']) {
+    const controller = new AbortController();
+    const api = createCatalogApi('/api', async (_url, { signal }) => { controller.abort(); signal.throwIfAborted(); });
+    await assert.rejects(api[method]('chair', controller.signal), { name: 'AbortError' });
+  }
 });
 
 test('URL query accepts dynamic slugs and UUIDs; validates sort, length and page', () => {

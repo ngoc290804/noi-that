@@ -31,7 +31,7 @@ const priceFormatter = new Intl.NumberFormat('vi-VN');
 export const formatPrice = (value: number) => `${priceFormatter.format(value)}đ`;
 
 // Typed database attributes take precedence over legacy placeholder specifications.
-export function getSpecifications(product: import('../types/catalog').Product) {
+export function getSpecifications(product: import('../types/catalog').ProductDetails) {
   const specifications = product.specifications.map((item) => ({ ...item }));
   function set(label: string, value: string | null | undefined, unit?: string) {
     if (value == null || value === '') return;

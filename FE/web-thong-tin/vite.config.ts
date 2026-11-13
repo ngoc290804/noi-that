@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   const proxy = { '/api': { target: env.API_PROXY_TARGET || 'http://127.0.0.1:8080', changeOrigin: true } };
   return {
     plugins: [react()],
+    build: { target: ['safari15.4', 'chrome105', 'edge105', 'firefox121'] },
     server: { port: 5173, strictPort: true, proxy },
     preview: { port: 4173, strictPort: true, proxy },
   };

@@ -32,6 +32,12 @@ export interface Product {
   color?: string | null;
 }
 
+export type ProductSummary = Pick<Product, 'id' | 'slug' | 'name' | 'categoryId' | 'priceVnd' | 'shortDescription'> & {
+  primaryImage: ProductImage | null;
+};
+export type ProductDetails = Pick<Product, 'description' | 'specifications' | 'lengthCm' | 'widthCm' | 'heightCm' | 'material' | 'color'>;
+export type ProductPreview = Pick<Product, 'id' | 'slug' | 'name' | 'priceVnd' | 'images'>;
+
 export interface Category {
   id: string;
   name: string;

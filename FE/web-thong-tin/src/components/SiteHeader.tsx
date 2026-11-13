@@ -23,7 +23,8 @@ export function SiteHeader() {
     const value = String(new FormData(event.currentTarget).get('q') ?? '').trim();
     const params = new URLSearchParams();
     if (value) params.set('q', value);
-    navigate(`/san-pham${params.size ? `?${params}` : ''}`);
+    const query = params.toString();
+    navigate(`/san-pham${query ? `?${query}` : ''}`);
   }
 
   return (

@@ -8,12 +8,20 @@
 npm ci
 npm run dev          # http://127.0.0.1:5173
 npm run typecheck
-npm test             # 15 kịch bản hợp đồng HTTP, query URL, thông số và lỗi
+npm test             # Hợp đồng HTTP, query URL, thông số và lỗi
 npm run build        # typecheck + production build
 npm run preview      # http://127.0.0.1:4173
 ```
 
 Dùng Node.js >=22.12. Test sử dụng tính năng loại bỏ kiểu TypeScript của Node; Node 22 có thể hiển thị cảnh báo experimental. Không cần cài thêm test framework.
+
+## Tương thích trình duyệt
+
+Bản build nhắm tới Safari/iOS 15.4+, Chrome/Edge 105+ và Firefox 121+. Không cần cài thêm polyfill: gọi API dùng `AbortController` và timer 35 giây, không phụ thuộc `AbortSignal.any()`, `AbortSignal.timeout()` hoặc `throwIfAborted()`. Timer và listener được dọn khi request kết thúc, kể cả lỗi; timeout bao gồm thời gian đọc JSON. Hủy yêu cầu vẫn hoạt động khi đổi trang/bộ lọc, và không hủy request danh mục dùng chung của các trang khác.
+
+Tìm kiếm dùng chuỗi query thay cho `URLSearchParams.size`; menu có chiều cao `100vh` dự phòng cho trình duyệt thiếu `dvh`. Ảnh tiếp tục dùng `srcset`, lazy loading và ảnh nhỏ cho mobile. Không đảm bảo trình duyệt cũ hơn các mốc trên, vì giao diện còn dùng CSS layers và dialog gốc.
+
+Kiểm chứng bản sửa: production build và 32 test FE đạt, gồm 6 test tương thích/timeout/dọn tài nguyên. Playwright trên Chromium với `AbortSignal.any`, `timeout`, `throwIfAborted`, `reason` và `URLSearchParams.size` bị vô hiệu hóa đã kiểm tra tải trang chủ, tìm kiếm, xóa tìm kiếm, lọc/sort, chi tiết, menu, anchor và thử lại sau HTTP 503. Dùng API BE thật tại viewport 320/390/1440 px; ca HTTP 503 dùng fixture. Chưa kiểm tra trực tiếp trên thiết bị iOS cũ hoặc Safari thật.
 
 ## Kết nối BE
 
@@ -34,9 +42,9 @@ Production cần reverse proxy `/api` tới BE, hoặc đặt `VITE_API_BASE_URL
 
 Trang chủ chia thành ba khối độc lập, gọi song song `/api/home/hero`, `/api/home/featured-products` và `/api/home/spaces`. Banner hiển thị ngay khi API riêng trả về; sản phẩm nổi bật lấy trực tiếp tối đa 4 món, không đợi nội dung trang chủ để dò ID hoặc duyệt catalog. Mỗi khối có skeleton giữ chỗ, lỗi và nút thử lại riêng; phần Về Luma là nội dung tĩnh luôn có sẵn. Ảnh banner ưu tiên tải, ảnh không gian dùng lazy loading. Deploy BE trước FE vì cần các endpoint trang chủ mới; API `/api/home` cũ vẫn được giữ tương thích.
 
-Catalog gọi `/api/products?q=&category=&sort=&page=&size=24`, phân trang từ 0, và `/api/categories`. Bộ lọc dùng slug trong URL; URL UUID từ BE vẫn hoạt động. Chi tiết gọi `/api/products/{slug}`, danh mục và hai truy vấn giới hạn để ưu tiên sản phẩm tương tự cùng danh mục, không trùng/không chứa món đang xem, tối đa 8 món.
+Catalog gọi `/api/products?q=&category=&sort=&page=&size=24`, phân trang từ 0, và `/api/categories`. Bộ lọc dùng slug trong URL; URL UUID từ BE vẫn hoạt động.
 
-Trang chi tiết hiển thị sản phẩm chính ngay khi API chi tiết trả về. Danh mục và sản phẩm tương tự được tải độc lập sau đó; phần tương tự có trạng thái đang tải và nút thử lại riêng, lỗi của phần này không che hoặc tải lại sản phẩm chính. Khi chuyển sang sản phẩm khác, request tương tự cũ được hủy.
+Trang chi tiết gọi song song `/api/products/{slug}/summary`, `/images` và `/details`. Summary chỉ có thông tin chính và một ảnh đầu tiên; trang hiển thị tên, giá, giới thiệu và ảnh này ngay khi summary trả về. Bộ ảnh đầy đủ, mô tả/thông số có trạng thái tải và nút thử lại riêng; lỗi từng phần không che sản phẩm chính. `/api/products/{slug}/related` chỉ được gọi khi cuộn gần phần sản phẩm tương tự (trong 200 px); trình duyệt không hỗ trợ IntersectionObserver sẽ tải ngay. Endpoint này trả tối đa 8 thẻ gồm ID, slug, tên, giá và một ảnh, ưu tiên cùng danh mục và không chứa món đang xem. FE không còn gọi hai API danh sách để ghép gợi ý. Khi chuyển sản phẩm, các request cũ bị hủy và dữ liệu cũ được ẩn ngay. Deploy BE trước FE; API chi tiết tổng hợp cũ vẫn giữ tương thích.
 
 Danh mục chỉ tải một lần khi được dùng lần đầu trong mỗi lượt tải trang, rồi dùng lại khi chuyển route, lọc hoặc sắp xếp. Dữ liệu được giữ trong bộ nhớ và `sessionStorage` với khóa có phiên bản, tách theo API base URL. Mỗi lần reload sẽ tải mới một lần; cache của lượt tải trước không được dùng lại. Các lời gọi đồng thời dùng chung request; rời một trang chỉ hủy việc chờ của trang đó, không hủy request danh mục dùng chung. Request lỗi không được cache để nút thử lại có thể tải lại. Nếu trình duyệt chặn storage, cache trong bộ nhớ vẫn hoạt động.
 

@@ -13,10 +13,10 @@ function RouteFocus() {
   useEffect(() => {
     if (hash) {
       const element = document.getElementById(hash.slice(1));
-      element?.scrollIntoView({ behavior: 'instant' });
+      element?.scrollIntoView({ behavior: 'auto' });
       element?.focus({ preventScroll: true });
     } else {
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
       if (!first.current) document.getElementById('main')?.focus({ preventScroll: true });
     }
     first.current = false;

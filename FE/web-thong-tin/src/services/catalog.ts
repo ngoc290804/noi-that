@@ -1,4 +1,5 @@
-import type { CatalogQuery, Category, HomeContent, HomeHero, HomeSpace, Product, ProductPage } from '../types/catalog.ts';
+import type { CatalogQuery, Category, HomeContent, HomeHero, HomeSpace, Product, ProductDetails, ProductImage, ProductPage, ProductPreview, ProductSummary } from '../types/catalog.ts';
+import { abortReason, throwIfAborted } from '../utils/abort.ts';
 
 type CategoryStorage = Pick<Storage, 'getItem' | 'setItem'>;
 const pageStartedAt = globalThis.performance.timeOrigin;
@@ -10,7 +11,7 @@ function getSessionStorage(): CategoryStorage | undefined {
 function waitForCategories(request: Promise<Category[]>, signal?: AbortSignal): Promise<Category[]> {
   if (!signal) return request;
   return new Promise((resolve, reject) => {
-    const onAbort = () => { signal.removeEventListener('abort', onAbort); reject(signal.reason); };
+    const onAbort = () => { signal.removeEventListener('abort', onAbort); reject(abortReason(signal)); };
     signal.addEventListener('abort', onAbort, { once: true });
     request.then(
       (categories) => { signal.removeEventListener('abort', onAbort); resolve(categories); },
@@ -47,22 +48,33 @@ export function createCatalogApi(baseUrl = '/api', fetcher: typeof fetch = globa
   } catch { /* Unavailable or invalid storage falls back to the API. */ }
 
   async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-    const timeout = AbortSignal.timeout(35000);
-    const response = await fetcher(`${base}${path}`, {
-      headers: { Accept: 'application/json' },
-      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    });
-    if (!response.ok) throw new CatalogApiError(response.status);
-    // A misconfigured SPA proxy can return index.html with status 200.
-    if (!response.headers.get('content-type')?.includes('application/json')) throw new CatalogApiError(502);
-    return response.json() as Promise<T>;
+    throwIfAborted(signal);
+    // AbortSignal.any()/timeout() are unavailable on older iPhones.
+    const controller = new AbortController();
+    const onAbort = () => controller.abort(signal && abortReason(signal));
+    signal?.addEventListener('abort', onAbort, { once: true });
+    const timeout = globalThis.setTimeout(() => controller.abort(new DOMException('The request timed out.', 'TimeoutError')), 35000);
+    try {
+      const response = await fetcher(`${base}${path}`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new CatalogApiError(response.status);
+      // A misconfigured SPA proxy can return index.html with status 200.
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new CatalogApiError(502);
+      // Keep the timeout active until the response body has finished loading.
+      return await response.json() as T;
+    } finally {
+      globalThis.clearTimeout(timeout);
+      signal?.removeEventListener('abort', onAbort);
+    }
   }
   function listProducts(query: CatalogQuery, signal?: AbortSignal, size = 24) {
     const params = new URLSearchParams({ q: query.q, category: query.category, sort: query.sort, page: String(query.page ?? 0), size: String(size) });
     return get<ProductPage>(`/products?${params}`, signal);
   }
   async function listCategories(signal?: AbortSignal): Promise<Category[]> {
-    signal?.throwIfAborted();
+    throwIfAborted(signal);
     if (categories) return categories;
     if (!categoriesRequest) {
       // This request belongs to the page; one component leaving must not cancel it for others.
@@ -79,6 +91,10 @@ export function createCatalogApi(baseUrl = '/api', fetcher: typeof fetch = globa
   const getHomeFeaturedProducts = (signal?: AbortSignal) => get<Product[]>('/home/featured-products', signal);
   const getHomeSpaces = (signal?: AbortSignal) => get<HomeSpace[]>('/home/spaces', signal);
   const getProduct = (slug: string, signal?: AbortSignal) => get<Product>(`/products/${encodeURIComponent(slug)}`, signal);
+  const getProductSummary = (slug: string, signal?: AbortSignal) => get<ProductSummary>(`/products/${encodeURIComponent(slug)}/summary`, signal);
+  const getProductImages = (slug: string, signal?: AbortSignal) => get<ProductImage[]>(`/products/${encodeURIComponent(slug)}/images`, signal);
+  const getProductDetails = (slug: string, signal?: AbortSignal) => get<ProductDetails>(`/products/${encodeURIComponent(slug)}/details`, signal);
+  const getRelatedProducts = (slug: string, signal?: AbortSignal) => get<ProductPreview[]>(`/products/${encodeURIComponent(slug)}/related`, signal);
 
   async function getFeaturedProducts(ids: string[], signal?: AbortSignal) {
     if (!ids.length) return [];
@@ -94,19 +110,7 @@ export function createCatalogApi(baseUrl = '/api', fetcher: typeof fetch = globa
     return ids.flatMap((id) => found.has(id) ? [found.get(id)!] : []);
   }
 
-  async function getRelatedProducts(product: Product, signal?: AbortSignal) {
-    const query: CatalogQuery = { q: '', category: '', sort: 'featured' };
-    const [sameCategory, others] = await Promise.all([
-      listProducts({ ...query, category: product.categoryId }, signal, 9),
-      listProducts(query, signal, 9),
-    ]);
-    const unique = new Map<string, Product>();
-    for (const item of [...sameCategory.items, ...others.items]) {
-      if (item.id !== product.id && !unique.has(item.id)) unique.set(item.id, item);
-    }
-    return [...unique.values()].slice(0, 8);
-  }
-  return { listProducts, listCategories, getHomeContent, getHomeHero, getHomeFeaturedProducts, getHomeSpaces, getProduct, getFeaturedProducts, getRelatedProducts };
+  return { listProducts, listCategories, getHomeContent, getHomeHero, getHomeFeaturedProducts, getHomeSpaces, getProduct, getProductSummary, getProductImages, getProductDetails, getFeaturedProducts, getRelatedProducts };
 }
 
 export const catalogApi = createCatalogApi(import.meta.env?.VITE_API_BASE_URL || '/api');

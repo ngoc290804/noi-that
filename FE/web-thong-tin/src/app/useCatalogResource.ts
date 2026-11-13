@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { throwIfAborted } from '../utils/abort';
 
 // Key changes hide previous results immediately; cleanup cancels stale requests.
 export function useCatalogResource<T>(key: string, load: (signal: AbortSignal) => Promise<T>) {
@@ -8,7 +9,7 @@ export function useCatalogResource<T>(key: string, load: (signal: AbortSignal) =
     const controller = new AbortController();
     // Let synchronous cleanup run before starting I/O (including StrictMode replay).
     Promise.resolve().then(() => {
-      controller.signal.throwIfAborted();
+      throwIfAborted(controller.signal);
       return load(controller.signal);
     }).then(
       (data) => { if (!controller.signal.aborted) setState({ key, attempt, data }); },

@@ -76,7 +76,7 @@
   .search-form input { border: 0; background: transparent; min-width: 0; width: 100%; height: 48px; padding: 10px 16px; outline: none; font-size: 14px; }
   .search-form .icon-button { margin-right: 2px; }
   .search-form input::placeholder { color: #78766f; }
-  .menu-dialog { height: 100dvh; max-height: 100dvh; width: 360px; max-width: 90%; margin: 0 auto 0 0; }
+  .menu-dialog { height: 100vh; max-height: 100vh; height: 100dvh; max-height: 100dvh; width: 360px; max-width: 90%; margin: 0 auto 0 0; }
   .menu-content { padding: 22px 24px; display: flex; flex-direction: column; min-height: 100%; }
   .menu-content nav { display: grid; margin-top: 30px; }
   .menu-content nav a { padding: 22px 0; border-bottom: 1px solid var(--border); font-size: 21px; display: flex; align-items: center; justify-content: space-between; }
@@ -181,16 +181,13 @@
   .gallery-thumbnail img, .gallery-thumbnail .image-fallback { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 2px; }
   .gallery-thumbnail .image-fallback { padding: 4px; font-size: 10px; }
   .product-info { padding-top: 3px; min-width: 0; }
-  .product-category { font-size: 12px; color: var(--muted); margin-bottom: 12px; display: inline-block; text-underline-offset: 4px; }
-  .product-category:hover { text-decoration: underline; }
   .product-info h1 { font-size: clamp(32px, 3.3vw, 46px); }
   .detail-price { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 18px; }
   .detail-price > span:first-child { font-size: 26px; line-height: 1.4; }
   .reference-label { font-size: 11px; color: var(--muted); border-left: 1px solid var(--border); padding-left: 16px; }
   .detail-intro { font-size: 17px; margin-top: 26px; line-height: 1.65; }
   .detail-description { color: var(--muted); font-size: 14px; line-height: 1.9; margin-top: 12px; }
-  .detail-back { width: 100%; margin: 28px 0 30px; }
-  .product-accordions { border-top: 1px solid #bdbdb3; }
+  .product-accordions { margin-top: 28px; border-top: 1px solid #bdbdb3; }
   .product-accordions details { border-bottom: 1px solid #bdbdb3; }
   .product-accordions summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 17px 0; font-size: 15px; }
   .product-accordions summary::-webkit-details-marker { display: none; }

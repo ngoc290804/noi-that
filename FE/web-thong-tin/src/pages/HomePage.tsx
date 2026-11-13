@@ -13,7 +13,7 @@ export function HomePage() {
   useEffect(() => {
     if (hash === '#ve-luma') {
       const section = document.getElementById('ve-luma');
-      section?.scrollIntoView({ behavior: 'instant' });
+      section?.scrollIntoView({ behavior: 'auto' });
       section?.focus({ preventScroll: true });
     }
   }, [hash]);
