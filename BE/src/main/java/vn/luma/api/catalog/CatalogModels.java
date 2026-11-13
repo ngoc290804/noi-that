@@ -18,6 +18,7 @@ public final class CatalogModels {
     ) {}
     public record ProductPage(List<Product> items, long total, int page, int size) {}
     public record Space(String title, String description, ProductImage image, String href) {}
+    public record HomeHero(String heroTitle, String heroDescription, ProductImage heroImage) {}
     public record HomeContent(
         String heroTitle, String heroDescription, ProductImage heroImage,
         List<UUID> featuredProductIds, List<Space> spaces

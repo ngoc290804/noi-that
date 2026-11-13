@@ -88,6 +88,28 @@ public class CatalogRepository {
             featuredIds, content.spaces()));
     }
 
+    public Optional<HomeHero> getHomeHero() {
+        return jdbc.query("""
+            SELECT jsonb_build_object('heroTitle', content->'heroTitle',
+                'heroDescription', content->'heroDescription', 'heroImage', content->'heroImage')::text
+            FROM luma.home_content WHERE code = 'home' AND is_published
+            """, (rs, row) -> decode(rs.getString(1), new TypeReference<HomeHero>() {}))
+            .stream().findFirst();
+    }
+
+    public List<Product> getHomeFeaturedProducts(int size) {
+        return jdbc.query("SELECT p.* " + PUBLIC_PRODUCTS + """
+            AND p.is_featured ORDER BY p.display_order, p.id LIMIT :size
+            """, Map.of("size", size), productMapper());
+    }
+
+    public Optional<List<Space>> getHomeSpaces() {
+        return jdbc.query("""
+            SELECT content->'spaces' FROM luma.home_content WHERE code = 'home' AND is_published
+            """, (rs, row) -> decode(rs.getString(1), new TypeReference<List<Space>>() {}))
+            .stream().findFirst();
+    }
+
     private RowMapper<Product> productMapper() {
         return (rs, row) -> mapProduct(rs);
     }

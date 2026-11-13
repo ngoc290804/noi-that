@@ -51,4 +51,21 @@ public class CatalogController {
         return catalog.getHomeContent()
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nội dung trang chủ chưa được công khai."));
     }
+
+    @GetMapping("/home/hero")
+    public HomeHero homeHero() {
+        return catalog.getHomeHero()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nội dung giới thiệu chưa được công khai."));
+    }
+
+    @GetMapping("/home/featured-products")
+    public List<Product> homeFeaturedProducts(@RequestParam(defaultValue = "4") @Min(1) @Max(12) int size) {
+        return catalog.getHomeFeaturedProducts(size);
+    }
+
+    @GetMapping("/home/spaces")
+    public List<Space> homeSpaces() {
+        return catalog.getHomeSpaces()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nội dung không gian sống chưa được công khai."));
+    }
 }

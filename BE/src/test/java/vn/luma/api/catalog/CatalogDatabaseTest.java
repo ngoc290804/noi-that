@@ -61,6 +61,7 @@ class CatalogDatabaseTest {
         assertThat(catalog.getProduct("ghe-an-nordic")).isEmpty();
         assertThat(catalog.listProducts("ghe an", "", "featured", 0, 24).total()).isZero();
         assertThat(catalog.getHomeContent().orElseThrow().featuredProductIds()).doesNotContain(productId);
+        assertThat(catalog.getHomeFeaturedProducts(12)).extracting(CatalogModels.Product::id).doesNotContain(productId);
     }
 
     @Test
@@ -73,6 +74,29 @@ class CatalogDatabaseTest {
         assertThat(catalog.listProducts("", "gom-su", "featured", 0, 24).total()).isZero();
         assertThat(catalog.getHomeContent().orElseThrow().featuredProductIds())
             .doesNotContain(vaseId, cupsId);
+        assertThat(catalog.getHomeFeaturedProducts(12)).extracting(CatalogModels.Product::id).doesNotContain(vaseId, cupsId);
+    }
+
+    @Test
+    void homeSectionsMatchPublishedContentAndFeaturedProductsRespectOrderAndLimit() {
+        var content = catalog.getHomeContent().orElseThrow();
+        var hero = catalog.getHomeHero().orElseThrow();
+        assertThat(hero.heroTitle()).isEqualTo(content.heroTitle());
+        assertThat(hero.heroDescription()).isEqualTo(content.heroDescription());
+        assertThat(hero.heroImage()).isEqualTo(content.heroImage());
+        assertThat(catalog.getHomeSpaces().orElseThrow()).isEqualTo(content.spaces());
+        assertThat(catalog.getHomeFeaturedProducts(2)).extracting(CatalogModels.Product::slug)
+            .containsExactly("binh-gom-luma", "ghe-an-nordic");
+        jdbc.update("UPDATE luma.products SET is_featured = false WHERE slug = 'binh-gom-luma'");
+        assertThat(catalog.getHomeFeaturedProducts(2)).extracting(CatalogModels.Product::slug)
+            .containsExactly("ghe-an-nordic", "den-ban-horizon");
+    }
+
+    @Test
+    void unpublishedHomeDocumentHidesHeroAndSpaces() {
+        jdbc.update("UPDATE luma.home_content SET is_published = false WHERE code = 'home'");
+        assertThat(catalog.getHomeHero()).isEmpty();
+        assertThat(catalog.getHomeSpaces()).isEmpty();
     }
 
     @Test

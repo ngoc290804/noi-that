@@ -68,6 +68,63 @@ class CatalogControllerTest {
     }
 
     @Test
+    void heroIsIndependentAndContainsOnlyBannerFields() throws Exception {
+        when(catalog.getHomeHero()).thenReturn(Optional.of(new HomeHero("Luma", "Giới thiệu", null)));
+        mvc.perform(get("/api/home/hero"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.heroTitle").value("Luma"))
+            .andExpect(jsonPath("$.featuredProductIds").doesNotExist())
+            .andExpect(jsonPath("$.spaces").doesNotExist());
+        verify(catalog).getHomeHero();
+        verifyNoMoreInteractions(catalog);
+    }
+
+    @Test
+    void featuredProductsAreBoundedAndDoNotScanCatalogPages() throws Exception {
+        when(catalog.getHomeFeaturedProducts(4)).thenReturn(List.of());
+        when(catalog.getHomeFeaturedProducts(2)).thenReturn(List.of());
+        mvc.perform(get("/api/home/featured-products")).andExpect(status().isOk()).andExpect(content().json("[]"));
+        mvc.perform(get("/api/home/featured-products?size=2")).andExpect(status().isOk());
+        verify(catalog).getHomeFeaturedProducts(4);
+        verify(catalog).getHomeFeaturedProducts(2);
+        verifyNoMoreInteractions(catalog);
+    }
+
+    @Test
+    void rejectsInvalidHomeFeaturedLimitsBeforeQuerying() throws Exception {
+        for (String size : List.of("0", "-1", "13", "abc")) {
+            mvc.perform(get("/api/home/featured-products").param("size", size)).andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(catalog);
+    }
+
+    @Test
+    void spacesAreReturnedWithoutLoadingOtherHomeSections() throws Exception {
+        when(catalog.getHomeSpaces()).thenReturn(Optional.of(List.of(new Space("Phòng khách", "Không gian sống", null, "/san-pham"))));
+        mvc.perform(get("/api/home/spaces"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$[0].title").value("Phòng khách"))
+            .andExpect(jsonPath("$[0].href").value("/san-pham"));
+        verify(catalog).getHomeSpaces();
+        verifyNoMoreInteractions(catalog);
+    }
+
+    @Test
+    void missingHomeSectionsReturn404Independently() throws Exception {
+        when(catalog.getHomeHero()).thenReturn(Optional.empty());
+        when(catalog.getHomeSpaces()).thenReturn(Optional.empty());
+        mvc.perform(get("/api/home/hero")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/home/spaces")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void failedFeaturedSectionDoesNotPreventHeroResponse() throws Exception {
+        when(catalog.getHomeFeaturedProducts(4)).thenThrow(new DataAccessResourceFailureException("database-private-details"));
+        when(catalog.getHomeHero()).thenReturn(Optional.of(new HomeHero("Luma", "Giới thiệu", null)));
+        mvc.perform(get("/api/home/featured-products"))
+            .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.code").value("DATABASE_UNAVAILABLE"));
+        mvc.perform(get("/api/home/hero")).andExpect(status().isOk()).andExpect(jsonPath("$.heroTitle").value("Luma"));
+    }
+
+    @Test
     void productResponseSerializesUuidAndStructuredAttributes() throws Exception {
         UUID productId = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();

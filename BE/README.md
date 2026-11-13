@@ -62,8 +62,13 @@ API chỉ trả sản phẩm và danh mục có `is_published = true`; sản ph�
 | GET | `/api/products` | `{ items, total, page, size }` |
 | GET | `/api/products/{slug}` | Chi tiết một sản phẩm; không có/chưa công khai trả 404 |
 | GET | `/api/categories` | Mảng `{ id, slug, name }` |
-| GET | `/api/home` | Hero, ảnh không gian, ID sản phẩm nổi bật |
+| GET | `/api/home` | Hero, ảnh không gian, ID sản phẩm nổi bật; API tổng hợp được giữ tương thích |
+| GET | `/api/home/hero` | `{ heroTitle, heroDescription, heroImage }` — chỉ nội dung banner |
+| GET | `/api/home/featured-products` | Mảng sản phẩm nổi bật đang công khai; `size` mặc định 4, từ 1 đến 12 |
+| GET | `/api/home/spaces` | Mảng `{ title, description, image, href }` — các không gian sống đang công khai |
 | GET | `/actuator/health` | Trạng thái ứng dụng và kết nối DB; không lộ chi tiết DB |
+
+FE trang chủ gọi ba API thành phần song song, mỗi khối hiển thị và thử lại độc lập. Mỗi API chỉ chạy một truy vấn; danh sách nổi bật lọc `is_featured` và trạng thái công khai của cả sản phẩm/danh mục, sắp theo `display_order, id` rồi giới hạn ngay trong SQL, không đọc toàn bộ catalog hoặc chạy truy vấn đếm. Banner và không gian trả 404 khi nội dung trang chủ chưa công khai; danh sách nổi bật không có sản phẩm trả mảng rỗng. Khi phát hành thay đổi này, deploy BE trước FE để các endpoint mới sẵn sàng. Không cần migration DB mới.
 
 Query của `/api/products`:
 
