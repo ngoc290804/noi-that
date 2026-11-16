@@ -21,6 +21,7 @@ export interface Product {
   priceVnd: number;
   shortDescription: string;
   description: string;
+  careInstructions?: string;
   images: ProductImage[];
   specifications: Specification[];
   displayOrder: number;
@@ -35,7 +36,7 @@ export interface Product {
 export type ProductSummary = Pick<Product, 'id' | 'slug' | 'name' | 'categoryId' | 'priceVnd' | 'shortDescription'> & {
   primaryImage: ProductImage | null;
 };
-export type ProductDetails = Pick<Product, 'description' | 'specifications' | 'lengthCm' | 'widthCm' | 'heightCm' | 'material' | 'color'>;
+export type ProductDetails = Pick<Product, 'description' | 'careInstructions' | 'specifications' | 'lengthCm' | 'widthCm' | 'heightCm' | 'material' | 'color'>;
 export type ProductPreview = Pick<Product, 'id' | 'slug' | 'name' | 'priceVnd' | 'images'>;
 
 export interface Category {

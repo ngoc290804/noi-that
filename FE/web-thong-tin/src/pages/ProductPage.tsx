@@ -8,7 +8,7 @@ import { ProductGallery } from '../components/ProductGallery';
 import { ProductGrid } from '../components/ProductCard';
 import { catalogApi, CatalogApiError } from '../services/catalog';
 import type { ProductDetails as ProductDetailsData, ProductImage, ProductSummary } from '../types/catalog';
-import { formatPrice, getSpecifications } from '../utils/catalog';
+import { formatPrice, getSpecifications, getCareInstructions, isCareSpecification } from '../utils/catalog';
 import { NotFoundPage } from './NotFoundPage';
 
 export function ProductPage() {
@@ -45,9 +45,9 @@ function ProductDetails({ product, images, details }: {
   const backTo = typeof candidate === 'string' && (candidate === '/san-pham' || candidate.startsWith('/san-pham?')) ? candidate : '/san-pham';
   const careLabel = 'Hướng dẫn bảo quản';
   const referenceLabel = 'Thông tin tham khảo';
-  const careInstructions = details.data?.specifications.find((item) => item.label === careLabel)?.value;
+  const careInstructions = details.data ? getCareInstructions(details.data) : undefined;
   const referenceNote = details.data?.specifications.find((item) => item.label === referenceLabel)?.value;
-  const specifications = details.data ? getSpecifications(details.data).filter((item) => item.label !== careLabel && item.label !== referenceLabel) : [];
+  const specifications = details.data ? getSpecifications(details.data).filter((item) => !isCareSpecification(item.label) && item.label !== referenceLabel) : [];
   const description = details.data?.description ?? '';
   const canExpandDescription = description.length > 220;
 
@@ -85,7 +85,7 @@ function ProductDetails({ product, images, details }: {
             <details>
               <summary>{careLabel} <Icon name="chevron-down" /></summary>
               <div aria-busy={!details.data && !details.error}>
-                {details.data ? <p>{careInstructions || 'Thông tin hướng dẫn bảo quản của sản phẩm đang được cập nhật.'}</p> : details.error ? <SectionError message="Chưa thể tải hướng dẫn bảo quản." retry={details.retry} /> : <p role="status">Đang tải hướng dẫn bảo quản…</p>}
+                {details.data ? <p className="care-instructions">{careInstructions || 'Thông tin hướng dẫn bảo quản của sản phẩm đang được cập nhật.'}</p> : details.error ? <SectionError message="Chưa thể tải hướng dẫn bảo quản." retry={details.retry} /> : <p role="status">Đang tải hướng dẫn bảo quản…</p>}
               </div>
             </details>
           </div>

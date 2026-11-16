@@ -40,13 +40,13 @@ class ImageUploadServiceTest {
     }
 
     @Test
-    void standaloneUploadUsesUniquePublicIdWithoutChangingDatabase() {
+    void standaloneUploadUsesUniquePublicIdAndPersistsLibraryMetadata() {
         storageSucceeds();
         var result = service.upload(jpeg(), "  Ghế ăn  ", null);
         assertThat(result.alt()).isEqualTo("Ghế ăn");
         assertThat(result.publicId()).startsWith("luma/media/");
         assertThatCode(() -> UUID.fromString(result.publicId().substring("luma/media/".length()))).doesNotThrowAnyException();
-        verifyNoInteractions(products);
+        verify(products).remember(argThat(image -> image.alt().equals("Ghế ăn") && image.publicId().equals(result.publicId())));
     }
 
     @Test

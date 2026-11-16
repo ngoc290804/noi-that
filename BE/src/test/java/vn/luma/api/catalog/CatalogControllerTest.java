@@ -1,6 +1,10 @@
 package vn.luma.api.catalog;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.annotation.Import;
+import vn.luma.api.auth.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -18,8 +22,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static vn.luma.api.catalog.CatalogModels.*;
 
+@Import({SecurityConfig.class, PasswordConfig.class})
 @WebMvcTest(CatalogController.class)
 class CatalogControllerTest {
+    @MockitoBean AccountService accounts;
+    @MockitoBean LoginAttemptService attempts;
+    @BeforeEach void authenticatedAccount() {
+        org.mockito.Mockito.when(accounts.byUsername("editor")).thenReturn(new AccountModels.Account(java.util.UUID.randomUUID(),"editor","Nhân viên","EDITOR",true,false,0,java.time.Instant.now(),null));
+    }
     @Autowired MockMvc mvc;
     @MockitoBean CatalogRepository catalog;
 
@@ -225,7 +235,7 @@ class CatalogControllerTest {
 
     @Test
     void publicApiHasNoProductMutation() throws Exception {
-        mvc.perform(post("/api/products").contentType("application/json").content("{}"))
+        mvc.perform(post("/api/products").with(csrf()).contentType("application/json").content("{}"))
             .andExpect(status().isMethodNotAllowed());
         verifyNoInteractions(catalog);
     }

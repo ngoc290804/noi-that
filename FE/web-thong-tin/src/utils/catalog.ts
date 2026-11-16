@@ -48,3 +48,12 @@ export function getSpecifications(product: import('../types/catalog').ProductDet
   set('Kích thước', dimensionText.length ? dimensionText.join(' × ') : null);
   return specifications;
 }
+
+// Dedicated field wins even when intentionally cleared; legacy APIs remain readable.
+export function isCareSpecification(label: string) {
+  return ['huong dan bao quan', 'bao quan'].includes(normalizeSearch(label));
+}
+export function getCareInstructions(product: import('../types/catalog').ProductDetails) {
+  return product.careInstructions ?? product.specifications.filter(s => isCareSpecification(s.label))
+    .map(s => s.value).filter(Boolean).join('\n\n');
+}

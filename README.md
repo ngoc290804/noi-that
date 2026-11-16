@@ -25,7 +25,8 @@ npm run preview
 ## Tổ chức
 
 ```text
-FE/web-thong-tin/       Ứng dụng đang triển khai
+FE/web-thong-tin/       Website thông tin sản phẩm
+FE/web-quan-ly/         FE quản lý nội dung — nối API quản trị, cổng 5174
 BE/                    Spring Boot API công khai + Neon PostgreSQL + Flyway
 Art/                   Ảnh gốc, mockup và prototype, giữ nguyên
 docs/                  Hai kế hoạch riêng cho web quản lý và web thông tin
@@ -34,6 +35,7 @@ docs/                  Hai kế hoạch riêng cho web quản lý và web thông
 - [Hướng dẫn FE](FE/web-thong-tin/README.md): cách sửa nội dung, ảnh và cấu trúc ứng dụng.
 - [Hướng dẫn BE](BE/README.md): cấu hình `.env`, chạy API, migration, kiểm thử DB, upload Cloudinary và đồng bộ catalog từ source.
 - [Kế hoạch web thông tin](docs/02-KE-HOACH-WEB-THONG-TIN-HANG.md).
-- [Kế hoạch web quản lý](docs/01-KE-HOACH-WEB-QUAN-LY.md): vẫn hoãn triển khai.
+- [FE quản lý](FE/web-quan-ly/README.md): sản phẩm, danh mục, ảnh, nội dung website; đã nối API CRUD quản trị, dùng tài khoản/phân quyền và version; xem hướng dẫn chạy.
+- [Kế hoạch web quản lý](docs/01-KE-HOACH-WEB-QUAN-LY.md): phạm vi và phần BE cần triển khai tiếp.
 
-Dữ liệu hiện là mẫu từ bộ thiết kế; giá chỉ để tham khảo. Các thông số chưa được cung cấp ghi “Thông tin đang cập nhật”. BE cung cấp `/api/products`, `/api/products/{slug}`, `/api/categories`, `/api/home` và `/actuator/health`; Flyway tạo schema riêng `luma` cùng dữ liệu mẫu khớp FE. API quản lý ảnh `/api/admin/media/images` hỗ trợ upload Cloudinary và gắn ảnh vào sản phẩm, yêu cầu token riêng. FE đã gọi API cho trang chủ, danh mục, danh sách, chi tiết và sản phẩm tương tự; hiển thị ảnh Cloudinary từ DB, có tải/lỗi/thử lại và phân biệt lỗi kết nối với 404. `src/data/catalog.ts` chỉ còn là fixture/nguồn cho script đồng bộ catalog, không được dùng khi khách xem web. Chưa có giao diện quản trị, CRUD sản phẩm, giỏ hàng, đặt hàng hoặc thanh toán. Bản mẫu có `noindex, nofollow` để tránh giới thiệu dữ liệu thử như thông tin kinh doanh chính thức; chỉ đổi sau khi xác nhận nội dung và cấu hình phát hành.
+Dữ liệu hiện là mẫu từ bộ thiết kế; giá chỉ để tham khảo. Các thông số chưa được cung cấp ghi “Thông tin đang cập nhật”. BE cung cấp `/api/products`, `/api/products/{slug}`, `/api/categories`, `/api/home` và `/actuator/health`; Flyway tạo schema riêng `luma` cùng dữ liệu mẫu khớp FE. API quản lý ảnh `/api/admin/media/images` hỗ trợ upload Cloudinary và gắn ảnh vào sản phẩm, yêu cầu phiên đăng nhập và CSRF. FE đã gọi API cho trang chủ, danh mục, danh sách, chi tiết và sản phẩm tương tự; hiển thị ảnh Cloudinary từ DB, có tải/lỗi/thử lại và phân biệt lỗi kết nối với 404. `src/data/catalog.ts` chỉ còn là fixture/nguồn cho script đồng bộ catalog, không được dùng khi khách xem web. FE quản lý tại `FE/web-quan-ly/` đã nối CRUD sản phẩm/danh mục/media và nội dung trang chủ, bảo vệ bằng tài khoản ADMIN/EDITOR, cookie phiên và CSRF; hướng dẫn bảo quản có trường riêng. Có quản lý tài khoản và phân quyền; chưa có giỏ hàng, đặt hàng hoặc thanh toán. Bản mẫu có `noindex, nofollow` để tránh giới thiệu dữ liệu thử như thông tin kinh doanh chính thức; chỉ đổi sau khi xác nhận nội dung và cấu hình phát hành.

@@ -1,6 +1,6 @@
 # Luma API — Spring Boot + Neon PostgreSQL
 
-Backend sơ bộ cho website thông tin nội thất: sản phẩm, danh mục, nội dung trang chủ, kiểm tra DB và **lưu ảnh trên Cloudinary**. Dùng **Java 17+, Maven 3.6.3+, Spring Boot 3.5.16, Spring JDBC, PostgreSQL và Flyway 11.20.3** (hỗ trợ PostgreSQL 18 trên Neon). API quản lý ảnh dùng token riêng; chưa có đăng nhập quản trị, CRUD sản phẩm, giỏ hàng hoặc đặt hàng.
+Backend sơ bộ cho website thông tin nội thất: sản phẩm, danh mục, nội dung trang chủ, kiểm tra DB và **lưu ảnh trên Cloudinary**. Dùng **Java 17+, Maven 3.6.3+, Spring Boot 3.5.16, Spring JDBC, PostgreSQL và Flyway 11.20.3** (hỗ trợ PostgreSQL 18 trên Neon). Có đăng nhập quản trị tài khoản/mật khẩu, CRUD catalog và quản lý tài khoản; chưa có giỏ hàng hoặc đặt hàng.
 
 ## Chạy local
 
@@ -15,7 +15,7 @@ mvn spring-boot:run
 
 Spring Boot tự đọc `.env` từ thư mục làm việc hiện tại; cũng có thể truyền các biến môi trường tương ứng. File này theo cú pháp Java properties: không thêm `export` và không bao giá trị bằng dấu nháy. `.env` bị loại khỏi Git; `.env.example` chỉ chứa placeholder. **Không đặt thông tin DB trong FE hoặc biến `VITE_*`.**
 
-Ứng dụng chạy tại `http://localhost:8080`. Cấu hình `PORT` khi deploy hoặc `SERVER_PORT` khi chạy local để đổi cổng; nếu dùng cả hai, đặt cùng giá trị. Cấu hình `CORS_ALLOWED_ORIGINS` để đổi danh sách origin FE, phân cách bằng dấu phẩy. Mặc định chấp nhận `http://127.0.0.1:5173` và `http://localhost:5173` cho GET/HEAD/OPTIONS trên API công khai; API quản lý ảnh hỗ trợ thêm POST và header Authorization.
+Ứng dụng chạy tại `http://localhost:8080`. Cấu hình `PORT` khi deploy hoặc `SERVER_PORT` khi chạy local để đổi cổng; nếu dùng cả hai, đặt cùng giá trị. Cấu hình `CORS_ALLOWED_ORIGINS` để đổi danh sách origin FE, phân cách bằng dấu phẩy. Mặc định chấp nhận localhost/127.0.0.1 cổng 5173 và 5174; API quản trị hỗ trợ GET/POST/PUT/DELETE/OPTIONS và credentials.
 
 Neon cấp URL dạng `postgresql://user:password@host/database?...`. Với JDBC, tách thành:
 
@@ -35,7 +35,7 @@ Lần khởi động đầu tiên, Flyway tạo **schema riêng `luma`**, bảng
 - `V2__seed_demo_catalog.sql`: 3 danh mục, 4 sản phẩm và nội dung trang chủ lấy từ FE hiện tại. Đây vẫn là **nội dung/giá mẫu**.
 - `V3__uuid_ids_and_product_attributes.sql`: chuyển ID/khóa ngoại của ba bảng nghiệp vụ sang UUID, chuyển các ID sản phẩm trong JSON trang chủ và thêm thuộc tính sản phẩm. Giữ nguyên các dòng, slug và liên kết danh mục.
 
-Migration chỉ chạy một lần; khởi động lại không seed đè nội dung. Không sửa migration đã áp dụng; thêm `V4__...sql` khi đổi schema/dữ liệu. Không bật baseline hoặc clean tự động. Flyway cần tài khoản có quyền tạo schema/bảng.
+Migration chỉ chạy một lần; khởi động lại không seed đè nội dung. Không sửa migration đã áp dụng; thêm migration với phiên bản tiếp theo khi đổi schema/dữ liệu. Không bật baseline hoặc clean tự động. Flyway cần tài khoản có quyền tạo schema/bảng.
 
 Các bảng nằm ngoài `luma` không bị chỉnh sửa. File ảnh mẫu trong `FE/web-thong-tin/public/images/` được giữ lại; lệnh đồng bộ nguồn bên dưới upload ảnh lên Cloudinary và lưu URL vào DB. DB chỉ lưu URL ảnh, thumbnail, alt, kích thước pixel và `publicId` của ảnh Cloudinary. `images`, `specifications` và nội dung trang chủ dùng JSONB; danh mục và sản phẩm có quan hệ khóa ngoại. Phần upload không cần thêm bảng/migration.
 
@@ -88,7 +88,7 @@ Query của `/api/products`:
 | `page` | `0` | Chỉ số trang bắt đầu từ 0, không âm |
 | `size` | `24` | Từ 1 đến 100 |
 
-`total` là tổng sau lọc trước phân trang. Kết quả có thứ tự ổn định. Tìm kiếm xem `%` và `_` như ký tự thường; dữ liệu đầu vào không được nối vào SQL. Tham số vượt giới hạn/sai kiểu trả 400; DB lỗi trả 503 với `code: DATABASE_UNAVAILABLE`. Lỗi dùng `application/problem+json`, không trả SQL/password/stacktrace. Các API công khai chỉ đọc; thao tác upload/gắn ảnh nằm trong API quản lý có token riêng.
+`total` là tổng sau lọc trước phân trang. Kết quả có thứ tự ổn định. Tìm kiếm xem `%` và `_` như ký tự thường; dữ liệu đầu vào không được nối vào SQL. Tham số vượt giới hạn/sai kiểu trả 400; DB lỗi trả 503 với `code: DATABASE_UNAVAILABLE`. Lỗi dùng `application/problem+json`, không trả SQL/password/stacktrace. Các API công khai chỉ đọc; thao tác upload/gắn ảnh nằm trong API quản lý có phiên đăng nhập.
 
 ```bash
 curl http://localhost:8080/actuator/health
@@ -118,31 +118,14 @@ CLOUDINARY_API_SECRET=your-api-secret
 MEDIA_UPLOAD_TOKEN=at-least-32-random-characters
 ```
 
-API secret và token chỉ dùng ở BE/công cụ quản lý, không đưa vào FE công khai hoặc biến `VITE_*`. Token quản lý đã được sinh ngẫu nhiên trong `.env` local; dùng giá trị này cho header `Authorization: Bearer ...`. Nếu không có token đủ 32 ký tự hoặc thiếu cấu hình Cloudinary, API ảnh trả 503; API catalog vẫn chạy bình thường.
+API secret chỉ dùng ở BE. `MEDIA_UPLOAD_TOKEN` nay chỉ xác nhận chủ cửa hàng khi tạo admin đầu tiên; không còn cấp quyền upload/catalog. Đăng nhập tài khoản và dùng cookie phiên + CSRF cho API quản lý. Thiếu Cloudinary trả 503 cho API ảnh; catalog vẫn hoạt động.
 
 | Method | Endpoint | Chức năng |
 | --- | --- | --- |
 | GET | `/api/admin/media/status` | Gọi ping có xác thực tới Cloudinary, trả provider/cloudName/status |
 | POST | `/api/admin/media/images` | Upload multipart `file`, `alt`; tùy chọn `productId` UUID để thêm ảnh vào gallery sản phẩm |
 
-```bash
-# Thay YOUR_MEDIA_UPLOAD_TOKEN bằng token trong .env
-curl http://localhost:8080/api/admin/media/status \
-  -H 'Authorization: Bearer YOUR_MEDIA_UPLOAD_TOKEN'
-
-# Upload độc lập, nhận URL để sử dụng sau
-curl http://localhost:8080/api/admin/media/images \
-  -H 'Authorization: Bearer YOUR_MEDIA_UPLOAD_TOKEN' \
-  -F 'file=@/absolute/path/to/photo.jpg' \
-  -F 'alt=Ảnh sản phẩm'
-
-# Upload và thêm trực tiếp vào gallery của sản phẩm có UUID tương ứng
-curl http://localhost:8080/api/admin/media/images \
-  -H 'Authorization: Bearer YOUR_MEDIA_UPLOAD_TOKEN' \
-  -F 'file=@/absolute/path/to/photo.jpg' \
-  -F 'alt=Ảnh chi tiết sản phẩm' \
-  -F 'productId=UUID_FROM_PRODUCTS_API'
-```
+Ví dụ upload sau khi đăng nhập: gửi cookie `LUMA_SESSION`, header `X-CSRF-TOKEN` lấy từ `/api/auth/csrf`, multipart `file=@/absolute/path/to/photo.jpg`, `alt=Ảnh sản phẩm`; tùy chọn `productId=UUID_FROM_PRODUCTS_API`. Không đặt thủ công Content-Type multipart để client tự thêm boundary.
 
 Upload thành công trả HTTP 201 với `publicId`, `src` (URL HTTPS), `thumbnail`, `alt`, `width`, `height`, `bytes`, `format` và `productId` (null nếu upload độc lập). Thumbnail rộng tối đa 600 px, giữ tỷ lệ, dùng chất lượng/định dạng tự động. Public ID do BE sinh, nằm dưới `luma/media/` hoặc `luma/products/{productId}/`; không ghi đè ảnh đã có. Mỗi upload truyền rõ `asset_folder`, nên ảnh thực sự nằm trong thư mục tương ứng của Media Library.
 
@@ -157,7 +140,7 @@ luma/
 
 Tài khoản đang dùng dynamic folders; `asset_folder` là vị trí hiển thị trong Media Library. Việc chuyển thư mục giữ nguyên public ID và URL. Tham khảo [Cloudinary folder modes](https://cloudinary.com/documentation/folder_modes).
 
-Chấp nhận **JPEG, PNG, WebP**, tối đa **10 MiB mỗi file**, mô tả `alt` từ 1–300 ký tự. BE kiểm tra chữ ký định dạng trong dữ liệu; Cloudinary tiếp tục kiểm tra ảnh thực và giới hạn định dạng. File rỗng trả 400, sai định dạng trả 415, quá dung lượng trả 413, thiếu/sai token trả 401, sản phẩm không tồn tại trả 404. Lỗi từ Cloudinary trả thông báo an toàn với `CLOUDINARY_UNAVAILABLE` (502), `IMAGE_REJECTED` (400) hoặc `CLOUDINARY_NOT_CONFIGURED` (503), không trả nội dung lỗi/credentials của nhà cung cấp.
+Chấp nhận **JPEG, PNG, WebP**, tối đa **10 MiB mỗi file**, mô tả `alt` từ 1–300 ký tự. BE kiểm tra chữ ký định dạng trong dữ liệu; Cloudinary tiếp tục kiểm tra ảnh thực và giới hạn định dạng. File rỗng trả 400, sai định dạng trả 415, quá dung lượng trả 413, chưa đăng nhập trả 401, thiếu/sai CSRF trả 403, sản phẩm không tồn tại trả 404. Lỗi từ Cloudinary trả thông báo an toàn với `CLOUDINARY_UNAVAILABLE` (502), `IMAGE_REJECTED` (400) hoặc `CLOUDINARY_NOT_CONFIGURED` (503), không trả nội dung lỗi/credentials của nhà cung cấp.
 
 Nếu có `productId`, BE kiểm tra sản phẩm trước khi upload, rồi thêm metadata vào mảng `products.images` bằng một câu UPDATE nguyên tử, giữ nguyên gallery cũ. Nếu lưu DB thất bại hoặc sản phẩm bị xóa trong lúc upload, BE cố gắng xóa riêng ảnh vừa tạo khỏi Cloudinary. API này không tự di chuyển ảnh mẫu; dùng lệnh đồng bộ nguồn bên dưới cho tác vụ đó. Upload độc lập chỉ lưu ở Cloudinary và trả metadata, không chỉnh DB. API quản lý ảnh cũng dùng được với sản phẩm nháp; API công khai vẫn chỉ hiển thị nội dung đã công khai.
 
@@ -177,7 +160,7 @@ python3 BE/scripts/sync-catalog.py --apply
 
 Script đọc trực tiếp `FE/web-thong-tin/src/data/catalog.ts`: danh mục, sản phẩm, gallery, hero và các khối không gian trang chủ. Đọc ảnh đầy đủ từ `FE/web-thong-tin/public/images/`; thumbnail được Cloudinary tạo tự động. Catalog nguồn hiện có 4 danh mục, 9 sản phẩm và 17 ảnh riêng biệt. Danh mục `tu-ke` chứa Tủ gỗ sồi Komorebi; Bàn trà Sol thuộc Ghế & Bàn, Đèn thả Dome thuộc Đèn. Ghế ăn Nordic có ba ảnh; Bàn ăn Nordic có năm ảnh (bàn riêng, bài trí, hai góc phối ghế và chi tiết), thuộc Ghế & Bàn; hero và một khối không gian dùng chung ảnh. Cả 9 sản phẩm đã có mô tả, kích thước, chất liệu, màu sắc và bảo quản; Đèn thả Dome có thêm nguồn điện/công suất, nhiệt độ màu mẫu. Giá và thông số là dữ liệu mẫu có ghi chú rõ; thay bằng dữ liệu chính thức sau khi được nhà cung cấp xác nhận.
 
-Mỗi sản phẩm có mô tả ngắn/chi tiết, gợi ý bố trí và hướng dẫn bảo quản. Hướng dẫn nằm trong `specifications` với nhãn `Hướng dẫn bảo quản`, được FE hiển thị tại accordion tương ứng; không cần migration mới. Giá và thông số vật lý hiện có trong source là **dữ liệu mẫu**, đã được gắn nhãn `Thông tin tham khảo` trên từng sản phẩm, chưa phải thông tin nhà cung cấp xác nhận. Chỉ thay bằng thông số chính thức khi có nguồn xác nhận.
+Mỗi sản phẩm có mô tả ngắn/chi tiết, gợi ý bố trí và hướng dẫn bảo quản. Từ migration V4, hướng dẫn lưu chính thức tại `care_instructions` và API trả `careInstructions`. Nhãn `Hướng dẫn bảo quản` trong JSON được tạo tự động để giữ tương thích BE/FE cũ; biểu mẫu chỉ có một trường bảo quản riêng. Giá và thông số vật lý hiện có trong source là **dữ liệu mẫu**, đã được gắn nhãn `Thông tin tham khảo` trên từng sản phẩm, chưa phải thông tin nhà cung cấp xác nhận. Chỉ thay bằng thông số chính thức khi có nguồn xác nhận.
 
 Trước khi ghi, script lưu bản dump schema `luma`, snapshot JSON và dữ liệu nguồn tại `BE/.local/catalog-sync/<UTC timestamp>/`. Thư mục này bị loại khỏi Git; file backup/report có quyền 0600. `images.json` ghi ánh xạ file nguồn → Cloudinary, `apply.sql` ghi câu lệnh áp dụng, `before.json`/`after.json` dùng để đối chiếu và `result.json` chứa kết quả.
 
@@ -219,7 +202,9 @@ Sau khi đẩy các file lên GitHub, tạo hoặc cập nhật project BE trên
 | `CLOUDINARY_CLOUD_NAME` | Cloud name, nếu dùng API ảnh |
 | `CLOUDINARY_API_KEY` | API key, nếu dùng API ảnh |
 | `CLOUDINARY_API_SECRET` | API secret, nếu dùng API ảnh |
-| `MEDIA_UPLOAD_TOKEN` | Token riêng tối thiểu 32 ký tự, nếu dùng API ảnh |
+| `MEDIA_UPLOAD_TOKEN` | Mã xác nhận chủ cửa hàng tối thiểu 32 ký tự, chỉ để tạo admin đầu tiên |
+| `SESSION_COOKIE_SECURE` | `true` trên HTTPS; mặc định `false` cho local HTTP |
+| `SESSION_COOKIE_SAME_SITE` | Mặc định `lax`; `none` cần Secure và cấu hình cross-site phù hợp |
 
 Không cần upload `.env`: nhập giá trị trong Vercel Environment Variables, không bao giá trị bằng dấu nháy. Nếu đã có `SERVER_PORT` trong project Vercel, xóa biến đó hoặc đặt cùng `8080`. Flyway chạy migration khi ứng dụng khởi động, vì vậy Neon phải truy cập được và tài khoản DB phải đủ quyền như phần migration phía trên.
 
@@ -258,3 +243,64 @@ Test tích hợp được bật riêng bằng `LUMA_DB_TESTS=true`, kiểm tra c
 Khi phát hành, đặt biến môi trường trên máy chủ, cấu hình origin FE thật và dùng HTTPS. Tài khoản DB hiện có thể chạy migration; sau này có thể tách tài khoản migration và tài khoản runtime chỉ đọc khi triển khai quản trị.
 
 Tham khảo: [Spring Boot 3.5 / Java 17](https://docs.spring.io/spring-boot/3.5/system-requirements.html), [kết nối Java với Neon](https://neon.com/docs/guides/java), [tham số PostgreSQL JDBC](https://jdbc.postgresql.org/documentation/use/).
+
+
+## API quản trị catalog (V4)
+
+FE quản lý tại `FE/web-quan-ly/`, cổng 5174. Mọi `/api/admin/**` yêu cầu session tài khoản ADMIN/EDITOR; thao tác ghi còn yêu cầu CSRF. API tài khoản chỉ ADMIN. Bearer cũ không còn dùng cho quản trị. Khi CORS có giá trị riêng, thêm chính xác origin FE vào `CORS_ALLOWED_ORIGINS` và cho phép credentials; nên dùng cùng origin qua proxy `/api`.
+
+| API | Thao tác |
+| --- | --- |
+| `GET /api/admin/catalog` | Snapshot nhất quán gồm products/categories/media/content/contentVersion |
+| `GET /api/admin/products`, `GET /api/admin/products/{uuid}` | Danh sách gồm nháp/lưu trữ và chi tiết quản trị |
+| `POST /api/admin/products`, `PUT /api/admin/products/{uuid}` | Thêm/sửa; trả bản ghi và version mới |
+| `DELETE /api/admin/products/{uuid}?version=N` | Đánh dấu xóa, ngừng công khai, trả 204 |
+| `POST /api/admin/products/archive` | `{products:[{id,version}]}`; toàn bộ thành công hoặc rollback, tối đa 100 bản ghi |
+| `GET/POST /api/admin/categories`, `PUT /api/admin/categories/{uuid}` | Danh mục, tên/slug/thứ tự/trạng thái |
+| `DELETE /api/admin/categories/{uuid}?version=N` | Chặn 409 khi còn sản phẩm chưa xóa, kể cả nháp/lưu trữ |
+| `GET /api/admin/media` | Thư viện UUID, URL, metadata, version và số bản ghi tham chiếu |
+| `POST /api/admin/media/images` | Upload hiện có, nay lưu metadata bền vững kể cả khi chưa gắn sản phẩm |
+| `PUT /api/admin/media/{uuid}` | `{alt,version}`; cập nhật alt trong thư viện, sản phẩm và trang chủ trong cùng transaction |
+| `DELETE /api/admin/media/{uuid}?version=N` | Chỉ gỡ ảnh không còn tham chiếu; giữ tệp Cloudinary |
+| `GET /api/admin/content`, `PUT /api/admin/content` | Đọc/cập nhật trang chủ, ảnh banner, nổi bật, không gian; có version |
+
+POST nhận `version:0`, PUT nhận version đã đọc. DELETE bắt buộc query version. BE tăng version ở DB trigger, kể cả upload ảnh hoặc script sync; trả 409 khi bản cũ, giữ nguyên dữ liệu máy chủ. Giá là số nguyên VND không âm trong giới hạn JS safe integer; kích thước >0, tối đa hai chữ số thập phân; slug duy nhất và danh mục/ảnh phải tồn tại. UI gửi ảnh dưới dạng `{id:uuid}` (có thể kèm metadata đọc được); BE lấy URL/alt thật từ media library, không tin URL client đưa vào.
+
+Sản phẩm có `status` draft/published/archived, `careInstructions`, trường chất liệu/màu/kích thước và thông số bổ sung `{label,value,unit}`. Không nhập lại các trường riêng trong thông số bổ sung. Lưu published cần ảnh. Thay đổi trạng thái áp dụng ngay sau khi ghi, chưa có nháp song song với bản công khai. Đổi slug chưa có redirect URL cũ. Xóa là logical delete và chưa có endpoint restore; slug của bản đã xóa vẫn được giữ. Lưu trữ phù hợp khi muốn khôi phục bằng UI.
+
+### Migration bảo quản và media
+
+V4 không sửa UUID/giá/gallery. Migration chuyển mọi đoạn văn từ nhãn cũ “Hướng dẫn bảo quản”/“Bảo quản” vào cột chính `care_instructions`, giữ xuống dòng và nối nhiều mục theo thứ tự. Trigger tạo đúng một nhãn tương thích từ cột này để BE/FE cũ tiếp tục đọc khi rollout; không có hai nguồn nhập tay. API quản trị loại nhãn đó khỏi thông số, API công khai trả trường riêng cùng nhãn tương thích. FE mới ưu tiên trường riêng; chuỗi rỗng nghĩa là đã xóa hướng dẫn, không khôi phục nội dung cũ bằng fallback.
+
+V4 cũng đăng ký ảnh hiện có từ gallery/banner/không gian vào `media_assets`. Upload mới lưu thư viện trong transaction; nếu ghi metadata/gallery thất bại, xóa bù đúng ảnh vừa upload. Metadata được dùng lại khi chọn ảnh; BE chặn xóa ảnh đang tham chiếu. Thao tác ghi quản trị được tuần tự hóa bằng transaction advisory lock để tránh đảo thứ tự khóa giữa media, sản phẩm và trang chủ; vẫn kiểm tra version.
+
+Dùng bản `scripts/sync-catalog.py` mới cùng V4. Script ánh xạ bảo quản từ fixture cũ, đăng ký ảnh và cập nhật trạng thái/version đúng với API. Không chạy script cũ sau khi chuyển schema. Sao lưu schema/dữ liệu trước rollout; triển khai BE có V4 rồi FE quản lý/web thông tin. V4 đã được áp dụng trên Neon sau xác nhận của người dùng khi xử lý chênh lệch nguồn giá. Backup và snapshot trước/sau nằm trong `BE/.local/price-source-fix/20261113T102958Z/`; đã đối chiếu giữ nguyên cả 9 giá, ID, tên và gallery. BE quản trị local cổng 8080 dùng cùng Neon với BE công khai trên Vercel; chưa deploy mã BE mới lên Vercel.
+
+Kiểm thử: `mvn test` chạy controller/validation/provider mocks; `LUMA_DB_TESTS=true mvn test` chạy cả PostgreSQL integration. Dùng DB/branch test riêng có locale Unicode UTF-8; fixture thay đổi được rollback. Lần kiểm tra hiện tại có 81 test BE đạt, migration từ V3 được kiểm tra riêng với nhãn cũ/nhiều đoạn bảo quản và source sync 9 sản phẩm/17 ảnh. HTTP thật xác minh CRUD, 401/409, public visibility và rollback toàn bộ batch lỗi.
+
+
+## Tài khoản và đăng nhập (V5)
+
+V5 chỉ thêm `admin_accounts`, bảng Spring Session JDBC và giới hạn đăng nhập; không chỉnh sản phẩm, giá, danh mục hoặc ảnh. Không seed tài khoản/mật khẩu mặc định. Sau khi chạy migration, mở FE, xác nhận mã khởi tạo `MEDIA_UPLOAD_TOKEN` rồi chủ cửa hàng tự đặt mật khẩu cho `admin`.
+
+| Endpoint | Chức năng |
+| --- | --- |
+| `GET /api/auth/session` | Trạng thái đăng nhập, user không có password/hash và trạng thái khởi tạo |
+| `GET /api/auth/csrf` | Token CSRF và tên header, kèm cookie phiên |
+| `POST /api/auth/setup-session` | CSRF + Bearer mã khởi tạo; chỉ khi chưa từng có tài khoản; hiệu lực 10 phút |
+| `POST /api/auth/setup` | `{displayName,password}` sau xác nhận; tạo ADMIN username `admin` |
+| `POST /api/auth/login` | Form URL encoded `username`, `password`, CSRF; trả session info |
+| `POST /api/auth/logout` | CSRF; thu hồi phiên/cookie hiện tại |
+| `POST /api/auth/password` | `{currentPassword,newPassword}`; đổi mật khẩu bản thân, thu hồi mọi phiên |
+| `GET/POST /api/admin/accounts` | ADMIN: danh sách / tạo `{username,displayName,password,role}` |
+| `PUT /api/admin/accounts/{id}` | ADMIN: `{displayName,role,active,version}` |
+| `PUT /api/admin/accounts/{id}/password` | ADMIN: `{password,version}`; reset thành mật khẩu tạm |
+| `DELETE /api/admin/accounts/{id}?version=N` | ADMIN: logical delete, thu hồi phiên |
+
+Tên đăng nhập 3–64 ký tự ASCII chữ thường/số/`._-` (bắt đầu bằng chữ/số), không đổi sau khi tạo. Mật khẩu ít nhất 6 ký tự, tối đa 72 byte UTF-8, BCrypt strength 12. Không trả password/hash qua API. Tài khoản được ADMIN tạo/reset phải đổi mật khẩu trước khi dùng catalog. EDITOR quản lý nội dung, ADMIN có thêm quyền tài khoản. Không thể tự hạ quyền, khóa, xóa, reset; luôn giữ ít nhất một ADMIN hoạt động. Khóa/đổi quyền/reset/xóa thu hồi phiên cũ; sửa dùng version và trả 409 nếu có xung đột.
+
+Cookie `LUMA_SESSION` HttpOnly, SameSite=Lax, phiên PostgreSQL hết hạn sau 30 phút không hoạt động; đổi session ID khi login. Mọi thao tác ghi gồm login/logout cần CSRF. 10 lần đăng nhập trong 15 phút theo username+IP, sau đó 429. Thiết lập `SESSION_COOKIE_SECURE=true` khi phát hành HTTPS. Nếu cross-site, cần SameSite=None + Secure và origin CORS cụ thể. Cấu hình proxy phải phản ánh đúng IP khách để giới hạn đăng nhập phù hợp.
+
+Kiểm thử tài khoản: `LUMA_AUTH_HTTP_TESTS=true mvn test` trên DB test riêng, vì bài kiểm tra tạo/đổi/khóa/xóa tài khoản fixture. Lần kiểm tra đầy đủ có **87 test đạt**, gồm HTTP thật với cookie/CSRF, BCrypt, session bền vững, phân quyền, bắt đổi mật khẩu, rate limit và thu hồi phiên. Không chạy test này trên DB cửa hàng.
+
+V5 đã được áp dụng trên Neon local sử dụng ngày 13/11/2026; backup tại `BE/.local/accounts-auth/20261113T110330Z/`. Snapshot catalog trước/sau giống hoàn toàn (9 sản phẩm); không seed hay đổi giá. Mã BE trên Vercel chưa được phát hành lại.

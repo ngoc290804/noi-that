@@ -16,15 +16,29 @@ public final class CatalogModels {
     ) {}
     public record ProductDetails(
         String description, List<Specification> specifications,
-        BigDecimal lengthCm, BigDecimal widthCm, BigDecimal heightCm, String material, String color
-    ) {}
+        BigDecimal lengthCm, BigDecimal widthCm, BigDecimal heightCm, String material, String color,
+        String careInstructions
+    ) {
+        public ProductDetails(String description, List<Specification> specifications, BigDecimal lengthCm,
+                BigDecimal widthCm, BigDecimal heightCm, String material, String color) {
+            this(description,specifications,lengthCm,widthCm,heightCm,material,color,"");
+        }
+    }
     public record ProductPreview(UUID id, String slug, String name, long priceVnd, List<ProductImage> images) {}
     public record Product(
         UUID id, String slug, String name, UUID categoryId, long priceVnd,
         String shortDescription, String description, List<ProductImage> images,
         List<Specification> specifications, int displayOrder, boolean isFeatured,
-        BigDecimal lengthCm, BigDecimal widthCm, BigDecimal heightCm, String material, String color
-    ) {}
+        BigDecimal lengthCm, BigDecimal widthCm, BigDecimal heightCm, String material, String color,
+        String careInstructions
+    ) {
+        public Product(UUID id,String slug,String name,UUID categoryId,long priceVnd,String shortDescription,
+                String description,List<ProductImage> images,List<Specification> specifications,int displayOrder,
+                boolean isFeatured,BigDecimal lengthCm,BigDecimal widthCm,BigDecimal heightCm,String material,String color) {
+            this(id,slug,name,categoryId,priceVnd,shortDescription,description,images,specifications,displayOrder,
+                isFeatured,lengthCm,widthCm,heightCm,material,color,"");
+        }
+    }
     public record ProductPage(List<Product> items, long total, int page, int size) {}
     public record Space(String title, String description, ProductImage image, String href) {}
     public record HomeHero(String heroTitle, String heroDescription, ProductImage heroImage) {}

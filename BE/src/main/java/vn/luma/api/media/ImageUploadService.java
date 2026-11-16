@@ -25,6 +25,7 @@ public class ImageUploadService {
 
     public StorageStatus status() { return cloudinary.status(); }
 
+    @org.springframework.transaction.annotation.Transactional
     public UploadedImage upload(MultipartFile file, String alt, UUID productId) {
         cloudinary.requireConfigured();
         if (alt == null || alt.isBlank() || alt.length() > 300)
@@ -44,13 +45,12 @@ public class ImageUploadService {
         var uploaded = cloudinary.upload(data, type, publicId);
         var image = new ProductImage(uploaded.secureUrl(), cloudinary.thumbnail(uploaded), alt.strip(),
             uploaded.width(), uploaded.height(), uploaded.publicId());
-        if (productId != null) {
-            try {
-                if (!products.append(productId, image)) throw missingProduct();
-            } catch (RuntimeException exception) {
-                cloudinary.discardNewUpload(uploaded.publicId());
-                throw exception;
-            }
+        try {
+            products.remember(image);
+            if (productId != null && !products.append(productId, image)) throw missingProduct();
+        } catch (RuntimeException exception) {
+            cloudinary.discardNewUpload(uploaded.publicId());
+            throw exception;
         }
         return new UploadedImage(image.publicId(), image.src(), image.thumbnail(), image.alt(), image.width(),
             image.height(), uploaded.bytes(), uploaded.format(), productId);

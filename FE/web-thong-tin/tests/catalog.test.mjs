@@ -268,3 +268,15 @@ test('reference prices use Vietnamese formatting', () => {
   assert.equal(formatPrice(2900000), '2.900.000đ');
   assert.equal(formatPrice(450000), '450.000đ');
 });
+
+
+test('care is a dedicated field, supports old APIs and preserves an intentional clear', async () => {
+  const { getCareInstructions, isCareSpecification } = await import('../src/utils/catalog.ts');
+  const details = { description: '', specifications: [{ label: 'Hướng dẫn bảo quản', value: 'Cũ' }] };
+  assert.equal(getCareInstructions({ ...details, careInstructions: 'Mới\nDòng hai' }), 'Mới\nDòng hai');
+  assert.equal(getCareInstructions(details), 'Cũ');
+  assert.equal(getCareInstructions({ ...details, careInstructions: '' }), '');
+  assert.equal(getCareInstructions({ description: '', specifications: [] }), '');
+  assert.equal(isCareSpecification('  BẢO QUẢN '), true);
+  assert.equal(isCareSpecification('Công suất'), false);
+});

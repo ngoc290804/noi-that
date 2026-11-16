@@ -25,7 +25,7 @@ public class CatalogRepository {
     private static final Pattern SEARCH_WHITESPACE = Pattern.compile("[\\s\\uFEFF]+", Pattern.UNICODE_CHARACTER_CLASS);
     private static final String PUBLIC_PRODUCTS = """
         FROM luma.products p JOIN luma.categories c ON c.id = p.category_id
-        WHERE p.is_published AND c.is_published
+        WHERE p.is_published AND c.is_published AND p.deleted_at IS NULL AND c.deleted_at IS NULL
         """;
     private final NamedParameterJdbcTemplate jdbc;
     private final ObjectMapper json;
@@ -88,11 +88,11 @@ public class CatalogRepository {
 
     public Optional<ProductDetails> getProductDetails(String slug) {
         return jdbc.query("""
-            SELECT p.description, p.specifications::text, p.length_cm, p.width_cm, p.height_cm, p.material, p.color
+            SELECT p.description, p.specifications::text, p.length_cm, p.width_cm, p.height_cm, p.material, p.color, p.care_instructions
             """ + PUBLIC_PRODUCTS + " AND p.slug = :slug", Map.of("slug", slug), (rs, row) ->
-            new ProductDetails(rs.getString("description"), decode(rs.getString("specifications"), new TypeReference<List<Specification>>() {}),
+            new ProductDetails(rs.getString("description"), publicSpecifications(rs),
                 rs.getBigDecimal("length_cm"), rs.getBigDecimal("width_cm"), rs.getBigDecimal("height_cm"),
-                rs.getString("material"), rs.getString("color")))
+                rs.getString("material"), rs.getString("color"), rs.getString("care_instructions")))
             .stream().findFirst();
     }
 
@@ -123,7 +123,7 @@ public class CatalogRepository {
                         AND word NOT IN ('ghe', 'ban', 'den', 'tu', 'ke', 'binh', 'bo', 'coc', 'gom', 'su',
                             'go', 'soi', 'nhien', 'cao', 'cap', 'noi', 'that')
                 ) relevance
-                WHERE p.is_published AND c.is_published
+                WHERE p.is_published AND c.is_published AND p.deleted_at IS NULL AND c.deleted_at IS NULL
                 AND p.id <> s.id
                 ORDER BY relevance.series_score DESC, relevance.name_score DESC, same_type DESC,
                     same_category DESC, p.display_order, p.id
@@ -143,7 +143,7 @@ public class CatalogRepository {
     public List<Category> listCategories() {
         return jdbc.query("""
             SELECT id, slug, name FROM luma.categories
-            WHERE is_published ORDER BY display_order, id
+            WHERE is_published AND deleted_at IS NULL ORDER BY display_order, id
             """, (rs, row) -> new Category(rs.getObject("id", UUID.class), rs.getString("slug"), rs.getString("name")));
     }
 
@@ -189,10 +189,22 @@ public class CatalogRepository {
         return new Product(rs.getObject("id", UUID.class), rs.getString("slug"), rs.getString("name"),
             rs.getObject("category_id", UUID.class), rs.getLong("price_vnd"), rs.getString("short_description"),
             rs.getString("description"), decode(rs.getString("images"), new TypeReference<List<ProductImage>>() {}),
-            decode(rs.getString("specifications"), new TypeReference<List<Specification>>() {}),
+            publicSpecifications(rs),
             rs.getInt("display_order"), rs.getBoolean("is_featured"),
             rs.getBigDecimal("length_cm"), rs.getBigDecimal("width_cm"), rs.getBigDecimal("height_cm"),
-            rs.getString("material"), rs.getString("color"));
+            rs.getString("material"), rs.getString("color"), rs.getString("care_instructions"));
+    }
+
+    private List<Specification> publicSpecifications(ResultSet rs) throws SQLException {
+        var specs = new java.util.ArrayList<>(decode(rs.getString("specifications"), new TypeReference<List<Specification>>() {}));
+        specs.removeIf(s -> {
+            String label = java.text.Normalizer.normalize(s.label().strip().toLowerCase(java.util.Locale.ROOT),java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").replace('đ','d');
+            return label.equals("huong dan bao quan") || label.equals("bao quan");
+        });
+        // Derived compatibility label for older public FE; storage has one care field.
+        String care = rs.getString("care_instructions");
+        if (care != null && !care.isBlank()) specs.add(new Specification("Hướng dẫn bảo quản", care, null));
+        return List.copyOf(specs);
     }
 
     private UUID parseUuid(String value) {

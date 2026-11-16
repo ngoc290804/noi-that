@@ -236,10 +236,17 @@ def verify_delivery(url):
 
 
 def sync_sql(payload):
+    # One canonical care field; legacy fixtures still use the specification label.
+    for product in payload['products']:
+        care = [s.get('value', '') for s in product.get('specifications', [])
+                if s.get('label', '').strip().casefold() in ('hướng dẫn bảo quản', 'bảo quản') and s.get('value')]
+        product.setdefault('careInstructions', '\n\n'.join(care))
+        product['specifications'] = [s for s in product.get('specifications', [])
+                                    if s.get('label', '').strip().casefold() not in ('hướng dẫn bảo quản', 'bảo quản')]
     # JSON is a quoted SQL value, never a SQL fragment. No secrets enter this file.
     encoded = json.dumps(payload, ensure_ascii=False).replace("'", "''")
     sql = "BEGIN;\nSET LOCAL standard_conforming_strings = on;\nSET LOCAL statement_timeout = '30s';\nSET LOCAL lock_timeout = '10s';\n"
-    sql += "CREATE TEMP TABLE catalog_sync_input (payload jsonb NOT NULL) ON COMMIT DROP;\n"
+    sql += "SELECT pg_advisory_xact_lock(1886745197);\nCREATE TEMP TABLE catalog_sync_input (payload jsonb NOT NULL) ON COMMIT DROP;\n"
     sql += "INSERT INTO catalog_sync_input VALUES ('" + encoded + "'::jsonb);\n"
     sql += """
 INSERT INTO luma.categories AS existing (slug, name, display_order, is_published)
@@ -251,22 +258,22 @@ WHERE (existing.name, existing.display_order, existing.is_published)
     IS DISTINCT FROM (EXCLUDED.name, EXCLUDED.display_order, EXCLUDED.is_published);
 
 INSERT INTO luma.products AS existing
-    (slug, name, category_id, price_vnd, short_description, description, images, specifications, display_order, is_featured, is_published)
+    (slug, name, category_id, price_vnd, short_description, description, care_instructions, images, specifications, display_order, is_featured, is_published, status)
 SELECT item->>'slug', item->>'name', category.id, (item->>'priceVnd')::bigint,
-    item->>'shortDescription', item->>'description', item->'images', item->'specifications',
-    (item->>'displayOrder')::integer, (item->>'isFeatured')::boolean, (item->>'isPublished')::boolean
+    item->>'shortDescription', item->>'description', item->>'careInstructions', item->'images', item->'specifications',
+    (item->>'displayOrder')::integer, (item->>'isFeatured')::boolean, (item->>'isPublished')::boolean, CASE WHEN (item->>'isPublished')::boolean THEN 'published' ELSE 'draft' END
 FROM catalog_sync_input CROSS JOIN LATERAL jsonb_array_elements(payload->'products') item
 JOIN luma.categories category ON category.slug=item->>'categorySlug'
 WHERE true
 ON CONFLICT (slug) DO UPDATE SET
     name=EXCLUDED.name, category_id=EXCLUDED.category_id, price_vnd=EXCLUDED.price_vnd,
-    short_description=EXCLUDED.short_description, description=EXCLUDED.description,
+    short_description=EXCLUDED.short_description, description=EXCLUDED.description, care_instructions=EXCLUDED.care_instructions,
     images=EXCLUDED.images, specifications=EXCLUDED.specifications, display_order=EXCLUDED.display_order,
-    is_featured=EXCLUDED.is_featured, is_published=EXCLUDED.is_published
+    is_featured=EXCLUDED.is_featured, is_published=EXCLUDED.is_published, status=EXCLUDED.status
 WHERE (existing.name, existing.category_id, existing.price_vnd, existing.short_description, existing.description,
-       existing.images, existing.specifications, existing.display_order, existing.is_featured, existing.is_published)
+       existing.images, existing.specifications, existing.display_order, existing.is_featured, existing.is_published, existing.care_instructions, existing.status)
     IS DISTINCT FROM (EXCLUDED.name, EXCLUDED.category_id, EXCLUDED.price_vnd, EXCLUDED.short_description, EXCLUDED.description,
-       EXCLUDED.images, EXCLUDED.specifications, EXCLUDED.display_order, EXCLUDED.is_featured, EXCLUDED.is_published);
+       EXCLUDED.images, EXCLUDED.specifications, EXCLUDED.display_order, EXCLUDED.is_featured, EXCLUDED.is_published, EXCLUDED.care_instructions, EXCLUDED.status);
 """
     for key, (column, datatype) in ATTRIBUTES.items():
         # Fixed identifier/type allowlist; only fields explicitly present in source are changed.
@@ -287,6 +294,20 @@ WHERE true
 ON CONFLICT (code) DO UPDATE SET content=EXCLUDED.content, is_published=EXCLUDED.is_published
 WHERE (existing.content, existing.is_published) IS DISTINCT FROM (EXCLUDED.content, EXCLUDED.is_published);
 """
+    sql += """
+INSERT INTO luma.media_assets AS m(src,thumbnail,public_id,alt,width,height)
+SELECT DISTINCT ON (asset->>'src') asset->>'src',coalesce(asset->>'thumbnail',asset->>'src'),asset->>'publicId',
+    left(coalesce(asset->>'alt',''),300),(asset->>'width')::integer,(asset->>'height')::integer
+FROM (SELECT jsonb_array_elements(images) asset FROM luma.products WHERE deleted_at IS NULL
+    UNION ALL SELECT content->'heroImage' FROM luma.home_content
+    UNION ALL SELECT s->'image' FROM luma.home_content h,LATERAL jsonb_array_elements(h.content->'spaces') s) assets
+WHERE nullif(asset->>'src','') IS NOT NULL
+ORDER BY asset->>'src'
+ON CONFLICT(src) DO UPDATE SET thumbnail=EXCLUDED.thumbnail,public_id=EXCLUDED.public_id,alt=EXCLUDED.alt,
+    width=EXCLUDED.width,height=EXCLUDED.height,deleted_at=NULL
+WHERE (m.thumbnail,m.public_id,m.alt,m.width,m.height,m.deleted_at) IS DISTINCT FROM
+    (EXCLUDED.thumbnail,EXCLUDED.public_id,EXCLUDED.alt,EXCLUDED.width,EXCLUDED.height,NULL::timestamptz);
+"""
     return sql + SNAPSHOT_SQL + '\nCOMMIT;\n'
 
 
@@ -303,13 +324,17 @@ def verify_database(before, after, payload):
         if source['slug'] in old_categories:
             assert actual['id'] == old_categories[source['slug']]['id']
     fields = {'name': 'name', 'priceVnd': 'price_vnd', 'shortDescription': 'short_description',
-              'description': 'description', 'images': 'images', 'specifications': 'specifications',
+              'description': 'description', 'careInstructions': 'care_instructions', 'images': 'images',
               'displayOrder': 'display_order', 'isFeatured': 'is_featured', 'isPublished': 'is_published'}
     for source in payload['products']:
         actual = products[source['slug']]
         uuid.UUID(actual['id'])
         assert actual['category_id'] == categories[source['categorySlug']]['id']
         assert all(actual[column] == source[key] for key, column in fields.items())
+        editable_specs = [s for s in actual['specifications'] if s.get('label') != 'Hướng dẫn bảo quản']
+        assert editable_specs == source['specifications']
+        compatibility_care = [s['value'] for s in actual['specifications'] if s.get('label') == 'Hướng dẫn bảo quản']
+        assert compatibility_care == ([source['careInstructions']] if source['careInstructions'].strip() else [])
         previous = old_products.get(source['slug'])
         if previous:
             assert actual['id'] == previous['id'] and actual['created_at'] == previous['created_at']

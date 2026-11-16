@@ -111,3 +111,8 @@ Tham chiếu gốc ở `../../Art/DesignUI/`: homepage, catalog, product detail,
 ## Giới hạn hiện tại
 
 Đã kết nối API công khai; chưa có giao diện CMS, đăng nhập, quản trị, giỏ hoặc giao dịch online. API upload ảnh được bảo vệ của BE không đưa vào web công khai. Chưa phát hành hosting; nếu phục vụ bằng static host phải có SPA fallback. Bản build đánh dấu không lập chỉ mục tìm kiếm cho đến khi thông tin kinh doanh được xác nhận. SEO metadata có theo trang ở phía client; HTML theo sản phẩm và mã HTTP chính xác cần giải pháp phục vụ/pre-render ở giai đoạn phát hành nếu được yêu cầu.
+
+
+## Trường hướng dẫn bảo quản
+
+FE ưu tiên `careInstructions` của API chi tiết; nếu máy chủ cũ chưa có trường này thì đọc nhãn `Hướng dẫn bảo quản`/`Bảo quản` trong specifications. Trường riêng rỗng có chủ đích sẽ hiện thông báo đang cập nhật, không lấy lại nội dung legacy. Bảo quản được loại khỏi bảng thông số và hiển thị ở accordion riêng, giữ xuống dòng. BE V4 tự chuyển dữ liệu cũ và duy trì một nhãn tương thích cho client cũ.

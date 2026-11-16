@@ -1,6 +1,10 @@
 # Kế hoạch web quản lý — Luma
 
-Ngày cập nhật: 12/11/2026. **Trạng thái: quy hoạch cho giai đoạn sau, tạm thời chưa triển khai.**
+Ngày cập nhật: 13/11/2026. **Trạng thái: FE quản lý đã kết nối API CRUD Spring Boot, đăng nhập tài khoản/mật khẩu, phân quyền ADMIN/EDITOR và kiểm tra version. V4/V5 đã áp dụng trên Neon; BE quản trị local dùng cùng DB với website. Mã BE mới chưa deploy lên Vercel.**
+
+FE gồm quản lý sản phẩm, danh mục, thư viện ảnh và nội dung trang chủ; dữ liệu đọc/ghi qua BE. Có thêm/sửa/xóa, chặn xóa bản ghi còn tham chiếu, upload thư viện và trường bảo quản riêng. Xem [hướng dẫn chạy và giới hạn](../FE/web-quan-ly/README.md), [mẫu UI](../Art/DesignUI/admin/products-concept.png). BE công khai và upload ảnh đã có, xem [BE/README.md](../BE/README.md).
+
+Các mục bên dưới giữ nội dung quy hoạch ban đầu ngày 12/11; mô tả “chưa có FE/BE” là trạng thái ở thời điểm lập kế hoạch, không phản ánh tiến độ hiện tại. Nghiệm thu tích hợp, xác thực và dữ liệu thật vẫn cần làm sau.
 
 Tài liệu liên quan: [Kế hoạch web thông tin hàng](02-KE-HOACH-WEB-THONG-TIN-HANG.md).
 
@@ -189,6 +193,6 @@ Chưa đặt thời hạn quản lý vì phần này vẫn hoãn và chưa chố
 
 ## 5. Trạng thái hiện tại và việc để sau
 
-FE web thông tin đã được triển khai và chạy độc lập bằng dữ liệu mẫu. Web quản lý vẫn ở bước quy hoạch; chưa khởi tạo ứng dụng quản lý, Spring Boot, cơ sở dữ liệu hoặc tài khoản nhân sự. Trong lúc chưa có quản lý, nội dung của web thông tin được sửa ở nguồn dữ liệu mẫu của FE.
+FE quản lý đã nối Spring Boot và Neon để CRUD sản phẩm/danh mục/ảnh/nội dung. Hướng dẫn bảo quản có trường riêng. Đăng nhập dùng tài khoản/mật khẩu, phiên cookie và phân quyền ADMIN/EDITOR; ADMIN quản lý tài khoản tại /tai-khoan. V4/V5 đã áp dụng; catalog và cả 9 giá được giữ nguyên. FE local cổng 5174 dùng BE cổng 8080 cùng Neon với website; mã BE mới chưa deploy lên Vercel. Tài khoản admin đầu tiên được chủ cửa hàng tự đặt mật khẩu qua form khởi tạo, không có mật khẩu mặc định.
 
 Đơn hàng, thanh toán, tồn kho giao dịch, khuyến mãi, tài khoản khách và giao hàng không thuộc kế hoạch quản lý thông tin này; chỉ bổ sung khi có yêu cầu tiếp theo.
