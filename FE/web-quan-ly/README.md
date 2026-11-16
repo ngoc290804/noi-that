@@ -16,9 +16,9 @@ Mở **http://127.0.0.1:5174/** và đăng nhập bằng tên tài khoản/mật
 
 Lần đầu khi DB chưa có tài khoản, xác nhận `MEDIA_UPLOAD_TOKEN` riêng của BE tại ô **Mã khởi tạo**, sau đó chủ cửa hàng tự nhập mật khẩu cho username `admin`. Không có mật khẩu mặc định. Mã cũ chỉ cấp quyền khởi tạo trong 10 phút và không dùng để truy cập API quản trị sau này. Mật khẩu từ 6 ký tự, tối đa 72 byte UTF-8; BE lưu BCrypt. Không gửi mật khẩu qua chat hoặc đưa vào source.
 
-Vite chuyển tiếp `/api` tới `http://127.0.0.1:8080`. Có thể đặt `API_PROXY_TARGET` trong `.env.local`; xem `.env.example`. `VITE_API_BASE_URL` là URL API công khai khi phát hành (mặc định `/api`); `VITE_STOREFRONT_URL` là URL web thông tin. Không đặt bí mật/token trong `VITE_*`.
+Vite chuyển tiếp `/api` tới `http://127.0.0.1:8080`. Có thể đặt `API_PROXY_TARGET` trong `.env.local`; xem `.env.example`. API quản trị luôn gọi `/api` cùng origin; không đọc `VITE_API_BASE_URL`, kể cả khi biến cũ còn được đặt trên hosting. `VITE_STOREFRONT_URL` là URL web thông tin. Không đặt bí mật/token trong `VITE_*`.
 
-`npm run build` kiểm tra TypeScript và build production; `npm run preview` dùng cổng 4174. Hosting cần SPA fallback về `index.html`, proxy `/api` hoặc API base + CORS BE phù hợp. CORS mặc định gồm localhost/127.0.0.1 cổng 5173 và 5174; nếu BE đã đặt `CORS_ALLOWED_ORIGINS`, thêm origin thực tế vào biến đó.
+`npm test` kiểm tra URL API cùng origin, cookie và CSRF; `npm run build` kiểm tra TypeScript và build production; `npm run preview` dùng cổng 4174. Hosting cần SPA fallback về `index.html` và proxy `/api` tới BE; `vercel.json` đã có cả hai. CORS mặc định gồm localhost/127.0.0.1 cổng 5173 và 5174; nếu BE đã đặt `CORS_ALLOWED_ORIGINS`, thêm origin thực tế vào biến đó.
 
 ## Màn hình và thao tác
 
@@ -65,4 +65,12 @@ EDITOR quản lý sản phẩm/danh mục/ảnh/nội dung; ADMIN có thêm quy�
 
 Mọi thao tác ghi yêu cầu CSRF lấy từ `/api/auth/csrf`, gửi `X-CSRF-TOKEN` cùng cookie. Đăng nhập bị giới hạn sau 10 lần thử trong 15 phút theo tên đăng nhập và IP. FE không tự thử lại thao tác ghi.
 
-Nên phát hành FE và proxy API cùng origin. HTTPS đặt `SESSION_COOKIE_SECURE=true`; chỉ dùng `SESSION_COOKIE_SAME_SITE=none` khi thật sự cần cross-site và đã bật Secure. CORS phải cho phép chính xác origin FE cùng credentials. BE mới phải được triển khai trước khi dùng FE mới trên hosting; Vercel hiện chưa cập nhật mã xác thực này.
+FE quản trị luôn dùng proxy API cùng origin. HTTPS đặt `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_SAME_SITE=lax`. CORS phải cho phép chính xác origin FE cùng credentials. BE production đã có API xác thực; redeploy BE sau khi cập nhật biến môi trường.
+
+## Vercel: xử lý 403 khi đăng nhập
+
+FE quản lý production: `https://noi-that-x4do.vercel.app`, BE: `https://noi-that-be-swart.vercel.app`. FE luôn gọi `/api/auth/...` trên tên miền của chính nó, sau đó rewrite tới BE. Biến `VITE_API_BASE_URL` cũ không còn tác dụng; không dùng URL BE tuyệt đối cho admin.
+
+Trên project BE, thêm `https://noi-that-x4do.vercel.app` vào `CORS_ALLOWED_ORIGINS`, giữ các origin hiện có, ngăn bằng dấu phẩy, không thêm `/` cuối. Kể cả khi dùng proxy, POST vẫn có thể chuyển tiếp Origin của FE và bị Spring chặn nếu chưa có trong allowlist. Không dùng wildcard để mở CORS cho mọi tên miền.
+
+Trên HTTPS đặt `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_SAME_SITE=lax`. Redeploy BE sau khi sửa biến, rồi redeploy FE từ commit mới. Kiểm tra `/api/auth/session` trên domain FE trả JSON và thử login; lỗi tên đăng nhập/mật khẩu phải là thông báo từ API, không phải lỗi kết nối hay CORS. Nếu thấy Request URL trỏ thẳng sang domain BE, FE vẫn đang chạy bản cũ.

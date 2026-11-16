@@ -1,8 +1,13 @@
 import type { Account, AccountInput, AdminData, Category, CreateAccountInput, HomeContent, ImageAsset, Product, SessionInfo } from '../types/admin';
 export class ApiError extends Error {
-  constructor(message: string, public status: number, public code?: string) { super(message); this.name = 'ApiError'; }
+  public status: number;
+  public code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message); this.name = 'ApiError'; this.status = status; this.code = code;
+  }
 }
-const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+// Account cookies and CSRF must use the admin site's origin. Vite/Vercel proxy /api.
+const apiBase = '/api';
 export function createAdminApi(onExpired: () => void) {
   let csrf: Promise<{ token: string; headerName: string }> | undefined;
   async function request<T>(path: string, method='GET', body?: unknown, signal?: AbortSignal, extraHeaders?: Record<string,string>): Promise<T> {
